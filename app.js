@@ -1,49 +1,42 @@
-
-const API_URL = "https://script.google.com/macros/s/AKfycbxuOo-0sQN06sM5CAtjvnx8zjLyeuC2bMfvZXN3oSGfpnYK6Cg1c1hL-d_gQ31_jo0l/exec";
-
-const USERS_SHEET = "URL_JSON_USUARIOS"; // lo conectaremos después si quieres
-const AVISOS_SHEET = "URL_JSON_AVISOS";
-
-let userActivo = localStorage.getItem("user");
+const API_URL = "https://script.google.com/macros/s/AKfycbysMXoxitxDHVGDXUZeFgejxfsVQo0-7iLBipX32VTPA6y229RbryRExdsyyVgYShIb/exec";
 
 // ================= LOGIN =================
 async function login() {
 
-  let user = document.getElementById("user").value;
-  let pass = document.getElementById("pass").value;
+  let user = document.getElementById("user").value.trim();
+  let pass = document.getElementById("pass").value.trim();
 
-  let res = await fetch(USERS_SHEET);
-  let data = await res.json();
+  try {
 
-  let users = data.values;
+    let res = await fetch(API_URL);
+    let users = await res.json();
 
-  let ok = false;
-  let activo = false;
+    let found = users.find(u =>
+      u.usuario === user &&
+      u.password === pass
+    );
 
-  for (let i = 1; i < users.length; i++) {
-
-    if (users[i][0] == user && users[i][1] == pass) {
-      ok = true;
-
-      if (users[i][2] == "SI") {
-        activo = true;
-      }
+    if (!found) {
+      document.getElementById("msg").innerText = "Usuario o contraseña incorrectos";
+      return;
     }
-  }
 
-  if (ok && activo) {
+    if (found.activo !== "SI") {
+      document.getElementById("msg").innerText = "Usuario desactivado";
+      return;
+    }
 
     localStorage.setItem("user", user);
+
     window.location.href = "app.html";
 
-  } else if (ok && !activo) {
-    document.getElementById("msg").innerText = "Usuario desactivado";
-  } else {
-    document.getElementById("msg").innerText = "Login incorrecto";
+  } catch (err) {
+    console.error(err);
+    document.getElementById("msg").innerText = "Error conexión API";
   }
 }
 
-// ================= INICIAL =================
+// ================= INIT =================
 window.onload = function () {
 
   if (window.location.pathname.includes("app.html")) {
@@ -55,7 +48,10 @@ function initApp() {
 
   let user = localStorage.getItem("user");
 
-  if (!user) return;
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
   document.getElementById("welcome").innerText =
     "Usuario: " + user;
@@ -64,18 +60,18 @@ function initApp() {
   cargarAvisos();
 }
 
-// ================= CONTROL UI =================
+// ================= UI =================
 function controlarUI(user) {
 
   document.getElementById("btnAviso").style.display = "inline";
 
-  // PRODUCCIÓN NO PUEDE GENERAR OT
+  // Producción no puede generar OT
   if (user === "produccion") {
     document.getElementById("btnOT").style.display = "none";
   }
 }
 
-// ================= CREAR AVISO =================
+// ================= AVISO =================
 async function crearAviso() {
 
   let user = localStorage.getItem("user");
@@ -97,21 +93,21 @@ async function crearAviso() {
       body: JSON.stringify(data)
     });
 
-    alert("Aviso guardado correctamente");
+    alert("Aviso creado correctamente");
 
   } catch (err) {
     console.error(err);
-    alert("Error al guardar aviso");
+    alert("Error al crear aviso");
   }
 }
 
-// ================= CREAR OT =================
+// ================= OT =================
 async function crearOT() {
 
   let user = localStorage.getItem("user");
 
   if (user === "produccion") {
-    alert("No tienes permisos para generar OT");
+    alert("No tienes permisos para crear OT");
     return;
   }
 
@@ -122,8 +118,8 @@ async function crearOT() {
     usuario: user,
     maquina: document.getElementById("maquina").value,
     proyecto: document.getElementById("proyecto").value,
-    descripcion: document.getElementById("desc").value,
-    tipoAveria: document.getElementById("tipo").value
+    tipoAveria: document.getElementById("tipo").value,
+    descripcion: document.getElementById("desc").value
   };
 
   try {
@@ -141,29 +137,19 @@ async function crearOT() {
   }
 }
 
-// ================= CARGAR AVISOS =================
+// ================= AVISOS =================
 async function cargarAvisos() {
 
   try {
 
-    let res = await fetch(AVISOS_SHEET);
-    let data = await res.json();
+    let res = await fetch(API_URL);
+    let users = await res.json();
 
-    let html = "";
-
-    for (let i = 1; i < data.values.length; i++) {
-
-      html += `
-        <div>
-          <b>${data.values[i][3]}</b> - ${data.values[i][6]}
-        </div>
-        <hr>
-      `;
-    }
-
-    document.getElementById("lista").innerHTML = html;
+    // (esto solo es placeholder si luego separas endpoint de avisos)
+    document.getElementById("lista").innerHTML =
+      "Avisos cargados (pendiente endpoint específico)";
 
   } catch (err) {
-    console.log("Avisos no cargados aún");
+    console.log("No se pudieron cargar avisos");
   }
 }
