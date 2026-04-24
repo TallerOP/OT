@@ -1,20 +1,97 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Login OT</title>
+  <meta charset="UTF-8">
+  <title>Sistema OT - Login</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 80px auto;
+      text-align: center;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 8px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+
+    #msg {
+      margin-top: 15px;
+      color: red;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Sistema OT - Login</h2>
+  <h2>Login Sistema OT</h2>
 
-<input id="user" placeholder="Usuario"><br><br>
-<input id="pass" type="password" placeholder="Password"><br><br>
+  <input id="user" placeholder="Usuario"><br>
+  <input id="pass" type="password" placeholder="Contraseña"><br>
 
-<button onclick="login()">Entrar</button>
+  <button onclick="login()">Entrar</button>
 
-<p id="msg"></p>
+  <p id="msg"></p>
 
-<script src="app.js"></script>
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbysMXoxitxDHVGDXUZeFgejxfsVQo0-7iLBipX32VTPA6y229RbryRExdsyyVgYShIb/exec";
+
+async function login() {
+
+  const user = document.getElementById("user").value.trim();
+  const pass = document.getElementById("pass").value.trim();
+
+  if (!user || !pass) {
+    document.getElementById("msg").innerText = "Rellena usuario y contraseña";
+    return;
+  }
+
+  try {
+
+    const res = await fetch(API_URL);
+    const text = await res.text();   // 🔥 clave para evitar errores
+    const users = JSON.parse(text);
+
+    console.log("Usuarios recibidos:", users);
+
+    const found = users.find(u =>
+      u.usuario === user &&
+      u.password === pass
+    );
+
+    if (!found) {
+      document.getElementById("msg").innerText = "Usuario o contraseña incorrectos";
+      return;
+    }
+
+    if (found.activo !== "SI") {
+      document.getElementById("msg").innerText = "Usuario desactivado";
+      return;
+    }
+
+    // Guardar sesión
+    localStorage.setItem("user", user);
+
+    // Redirigir
+    window.location.href = "app.html";
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("msg").innerText =
+      "Error conectando con el servidor";
+  }
+}
+
+</script>
 
 </body>
 </html>
