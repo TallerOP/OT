@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sistema OT</title>
+</head>
+<body>
+
+<h2>Gestión de OT</h2>
+
+<p id="welcome"></p>
+
+<hr>
+
+<h3>Formulario</h3>
+
+<input id="maquina" placeholder="Máquina"><br>
+<input id="proyecto" placeholder="Proyecto"><br>
+<input id="tipo" placeholder="Tipo Avería"><br>
+<textarea id="desc" placeholder="Descripción"></textarea><br><br>
+
+<!-- BOTONES -->
+<button id="btnAviso" onclick="crearAviso()">Generar Aviso</button>
+<button id="btnOT" onclick="crearOT()">Generar OT</button>
+
+<hr>
+
+<h3>Avisos</h3>
+<div id="lista"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
