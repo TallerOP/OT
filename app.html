@@ -1,11 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Gestión OT</title>
+  <meta charset="UTF-8">
+  <title>Sistema OT</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    #lista {
+      margin-top: 20px;
+    }
+
+    .card {
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>Gestión de OTs</h2>
+<h2>Gestión de OT</h2>
 
 <p id="welcome"></p>
 
@@ -13,10 +45,12 @@
 
 <h3>Formulario</h3>
 
-<input id="maquina" placeholder="Máquina"><br>
-<input id="proyecto" placeholder="Proyecto"><br>
-<input id="tipo" placeholder="Tipo Avería"><br>
-<textarea id="desc" placeholder="Descripción"></textarea><br><br>
+<input id="maquina" placeholder="Máquina">
+<input id="proyecto" placeholder="Proyecto">
+<input id="tipo" placeholder="Tipo avería">
+<textarea id="desc" placeholder="Descripción"></textarea>
+
+<br>
 
 <button id="btnAviso" onclick="crearAviso()">Generar Aviso</button>
 <button id="btnOT" onclick="crearOT()">Generar OT</button>
@@ -26,7 +60,134 @@
 <h3>Avisos</h3>
 <div id="lista"></div>
 
-<script src="app.js"></script>
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbysMXoxitxDHVGDXUZeFgejxfsVQo0-7iLBipX32VTPA6y229RbryRExdsyyVgYShIb/exec";
+
+// =========================
+// PROTECCIÓN DE ACCESO
+// =========================
+const user = localStorage.getItem("user");
+
+if (!user) {
+  // sin login → fuera
+  window.location.href = "index.html";
+}
+
+// =========================
+// INICIALIZAR APP
+// =========================
+window.onload = function () {
+
+  document.getElementById("welcome").innerText =
+    "Usuario: " + user;
+
+  controlarPermisos();
+  cargarAvisos();
+};
+
+// =========================
+// CONTROL PERMISOS
+// =========================
+function controlarPermisos() {
+
+  // Todos pueden crear aviso
+  document.getElementById("btnAviso").style.display = "inline";
+
+  // Producción NO puede crear OT
+  if (user.toLowerCase() === "produccion") {
+    document.getElementById("btnOT").style.display = "none";
+  }
+}
+
+// =========================
+// CREAR AVISO
+// =========================
+async function crearAviso() {
+
+  const data = {
+    tipo: "AVISO",
+    id: Date.now(),
+    fecha: new Date().toISOString(),
+    usuario: user,
+    maquina: document.getElementById("maquina").value,
+    proyecto: document.getElementById("proyecto").value,
+    descripcion: document.getElementById("desc").value
+  };
+
+  try {
+
+    await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+
+    alert("Aviso creado correctamente");
+
+  } catch (err) {
+    console.error(err);
+    alert("Error al crear aviso");
+  }
+}
+
+// =========================
+// CREAR OT
+// =========================
+async function crearOT() {
+
+  // BLOQUEO REAL (no solo UI)
+  if (user.toLowerCase() === "produccion") {
+    alert("No tienes permisos para crear OT");
+    return;
+  }
+
+  const data = {
+    tipo: "OT",
+    fecha: new Date().toISOString(),
+    hora: new Date().toLocaleTimeString(),
+    usuario: user,
+    maquina: document.getElementById("maquina").value,
+    proyecto: document.getElementById("proyecto").value,
+    tipoAveria: document.getElementById("tipo").value,
+    descripcion: document.getElementById("desc").value
+  };
+
+  try {
+
+    await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+
+    alert("OT creada correctamente");
+
+  } catch (err) {
+    console.error(err);
+    alert("Error al crear OT");
+  }
+}
+
+// =========================
+// CARGAR AVISOS (simple)
+// =========================
+async function cargarAvisos() {
+
+  try {
+
+    const res = await fetch(API_URL);
+    const data = await res.text();
+
+    console.log("Respuesta API:", data);
+
+    document.getElementById("lista").innerHTML =
+      "<em>Avisos cargados (pendiente endpoint separado)</em>";
+
+  } catch (err) {
+    console.log("Error cargando avisos");
+  }
+}
+
+</script>
 
 </body>
 </html>
