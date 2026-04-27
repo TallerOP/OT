@@ -5,9 +5,25 @@
 <title>Sistema OT</title>
 
 <style>
-body { font-family: Arial; max-width: 650px; margin: 40px auto; }
-select, textarea { width:100%; padding:8px; margin:6px 0; }
-button { padding:10px; margin-right:10px; }
+body { font-family: Arial; max-width: 700px; margin: 40px auto; }
+
+select, textarea {
+  width:100%;
+  padding:8px;
+  margin:6px 0;
+}
+
+button {
+  padding:10px;
+  margin-right:10px;
+  cursor:pointer;
+}
+
+.card {
+  border:1px solid #ccc;
+  padding:10px;
+  margin-bottom:10px;
+}
 </style>
 
 </head>
@@ -31,6 +47,11 @@ button { padding:10px; margin-right:10px; }
 
 <button id="btnAviso" onclick="crearAviso()">Generar Aviso</button>
 <button id="btnOT" onclick="crearOT()">Generar OT</button>
+
+<hr>
+
+<h3>Avisos pendientes</h3>
+<div id="lista"></div>
 
 <script src="app.js"></script>
 
