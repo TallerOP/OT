@@ -1,181 +1,59 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwgYAnbwN4Bb3b75EqUKB15Jw02M7YLdGgeepxnW1Aq_EwkUNAijaIcSgsbvBr2c4Lw/exec";
 
-// ================= PROTECCIÓN =================
-const user = localStorage.getItem("user");
+const API_URL = "https://script.google.com/macros/s/AKfycbwIbAGbyCjymW4VZ1uzZV7nrkaKw8-OpU8NX98fMA2a5Kzl7Q3VF613dri1L41mGcHy/exec";
 
-if (!user) {
-  window.location.href = "index.html";
-}
+async function crearOT(data) {
 
-// ================= INIT =================
-window.onload = function () {
-
-  document.getElementById("welcome").innerText =
-    "Usuario: " + user;
-
-  controlarPermisos();
-  cargarListas();
-  cargarAvisos();
-};
-
-// ================= PERMISOS =================
-function controlarPermisos() {
-
-  // Producción NO puede generar OT
-  if (user.toLowerCase() === "produccion") {
-    document.getElementById("btnOT").style.display = "none";
-  }
-}
-
-// ================= LISTAS =================
-async function cargarListas() {
-
-  try {
-
-    const res = await fetch(API_URL + "?tipo=listas");
-    const data = await res.json();
-
-    llenar("maquina", data.MAQUINA, "Seleccionar máquina");
-    llenar("proyecto", data.PROYECTO, "Seleccionar proyecto");
-    llenar("tipo", data.AVERIA, "Tipo de avería");
-    llenar("hora", data.HORA, "Seleccionar hora");
-
-  } catch (err) {
-    console.error("Error listas:", err);
-  }
-}
-
-function llenar(id, valores, texto) {
-
-  const select = document.getElementById(id);
-
-  select.innerHTML = `<option value="">${texto}</option>`;
-
-  valores.forEach(v => {
-    let opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    select.appendChild(opt);
-  });
-}
-
-// ================= AVISOS =================
-async function crearAviso() {
-
-  const data = {
-    tipo: "AVISO",
-    id: Date.now(),
-    fecha: new Date().toISOString(),
-    usuario: user,
-    maquina: document.getElementById("maquina").value,
-    proyecto: document.getElementById("proyecto").value,
-    tipoAveria: document.getElementById("tipo").value,
-    hora: document.getElementById("hora").value,
-    descripcion: document.getElementById("desc").value
-  };
-
-  await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(data)
-  });
-
-  alert("Aviso creado");
-  cargarAvisos();
-}
-
-// ================= OT =================
-async function crearOT() {
-
-  if (user.toLowerCase() === "produccion") {
-    alert("No tienes permisos");
-    return;
-  }
-
-  const data = {
-    tipo: "OT",
-    fecha: new Date().toISOString(),
-    hora: document.getElementById("hora").value,
-    usuario: user,
-    maquina: document.getElementById("maquina").value,
-    proyecto: document.getElementById("proyecto").value,
-    tipoAveria: document.getElementById("tipo").value,
-    descripcion: document.getElementById("desc").value
-  };
-
-  await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(data)
-  });
-
-  alert("OT creada");
-}
-
-// ================= LISTAR AVISOS =================
-async function cargarAvisos() {
-
-  try {
-
-    const res = await fetch(API_URL + "?tipo=avisos");
-    const avisos = await res.json();
-
-    let html = "";
-
-    avisos.forEach(a => {
-
-      html += `
-        <div class="card">
-          <b>${a.maquina}</b> - ${a.tipoAveria}<br>
-          ${a.descripcion}<br><br>
-          <button onclick="convertir('${a.id}')">Convertir a OT</button>
-          <button onclick="rechazar('${a.id}')">Rechazar</button>
-        </div>
-      `;
-    });
-
-    document.getElementById("lista").innerHTML = html;
-
-  } catch (err) {
-    console.error("Error avisos:", err);
-  }
-}
-
-// ================= CONVERTIR =================
-async function convertir(id) {
-
-  if (user.toLowerCase() === "produccion") {
-    alert("No tienes permisos");
-    return;
-  }
-
-  // Crear OT usando formulario actual
-  await crearOT();
-
-  // Marcar aviso
-  await fetch(API_URL, {
+  return fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
-      tipo: "UPDATE_AVISO",
-      id: id,
-      estado: "CONVERTIDO"
+      tipo: "OT",
+      id_web: crypto.randomUUID(),
+      hora: data.hora,
+      data: data.fecha,
+      emisor: data.emisor,
+      maquina: data.maquina,
+      proyecto: data.proyecto,
+      codigoAveria: data.codigoAveria,
+      descripcion: data.descripcion
     })
   });
-
-  alert("Aviso convertido en OT");
-  cargarAvisos();
 }
 
-// ================= RECHAZAR =================
-async function rechazar(id) {
+async function crearAviso(data) {
 
-  await fetch(API_URL, {
+  return fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
-      tipo: "UPDATE_AVISO",
-      id: id,
-      estado: "RECHAZADO"
+      tipo: "AVISO",
+      id: crypto.randomUUID(),
+      fecha: data.fecha,
+      usuario: data.usuario,
+      maquina: data.maquina,
+      proyecto: data.proyecto,
+      tipoAveria: data.tipoAveria,
+      hora: data.hora,
+      descripcion: data.descripcion
     })
   });
+}
 
-  alert("Aviso rechazado");
-  cargarAvisos();
+async function getOTs() {
+
+  const res = await fetch(API_URL + "?tipo=nuevasOTs");
+  const text = await res.text();
+
+  return text.split("\n").map(line => {
+    const f = line.split("|");
+    return {
+      ot: f[0],
+      hora: f[1],
+      fecha: f[2],
+      estado: f[3],
+      emisor: f[4],
+      maquina: f[5],
+      proyecto: f[6],
+      averia: f[7],
+      descripcion: f[8]
+    };
+  });
 }
