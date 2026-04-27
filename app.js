@@ -1,49 +1,84 @@
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwIbAGbyCjymW4VZ1uzZV7nrkaKw8-OpU8NX98fMA2a5Kzl7Q3VF613dri1L41mGcHy/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyYV-BHDGbBc5SowKb1j0t3ObDHp6NkVBv3Q26muCkjZ2JOu-Y8Zlw8-NdM9HNkL974/exec";
 
-async function crearOT(data) {
+// ==========================
+// DESPLEGABLES
+// ==========================
+async function cargarDropdowns() {
 
-  return fetch(API_URL, {
+  const res = await fetch(API_URL + "?tipo=dropdowns");
+  const data = await res.json();
+
+  fill("maquina", data.maquinas);
+  fill("proyecto", data.proyectos);
+  fill("averia", data.averias);
+}
+
+function fill(id, arr) {
+
+  const sel = document.getElementById(id);
+  sel.innerHTML = "";
+
+  arr.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+// ==========================
+// CREAR OT
+// ==========================
+async function crearOT(form) {
+
+  await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
       tipo: "OT",
-      id_web: crypto.randomUUID(),
-      hora: data.hora,
-      data: data.fecha,
-      emisor: data.emisor,
-      maquina: data.maquina,
-      proyecto: data.proyecto,
-      codigoAveria: data.codigoAveria,
-      descripcion: data.descripcion
+      id: crypto.randomUUID(),
+      hora: form.hora,
+      fecha: form.fecha,
+      emisor: form.emisor,
+      maquina: form.maquina,
+      proyecto: form.proyecto,
+      codigoAveria: form.codigoAveria,
+      descripcion: form.descripcion
     })
   });
 }
 
-async function crearAviso(data) {
+// ==========================
+// CREAR AVISO
+// ==========================
+async function crearAviso(form) {
 
-  return fetch(API_URL, {
+  await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
       tipo: "AVISO",
       id: crypto.randomUUID(),
-      fecha: data.fecha,
-      usuario: data.usuario,
-      maquina: data.maquina,
-      proyecto: data.proyecto,
-      tipoAveria: data.tipoAveria,
-      hora: data.hora,
-      descripcion: data.descripcion
+      fecha: form.fecha,
+      hora: form.hora,
+      usuario: form.usuario,
+      maquina: form.maquina,
+      proyecto: form.proyecto,
+      tipoAveria: form.tipoAveria,
+      descripcion: form.descripcion
     })
   });
 }
 
+// ==========================
+// EXPORT OTS
+// ==========================
 async function getOTs() {
 
-  const res = await fetch(API_URL + "?tipo=nuevasOTs");
+  const res = await fetch(API_URL + "?tipo=ots_export");
   const text = await res.text();
 
-  return text.split("\n").map(line => {
-    const f = line.split("|");
+  return text.split("\n").map(l => {
+    const f = l.split("|");
     return {
       ot: f[0],
       hora: f[1],
