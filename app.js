@@ -1,120 +1,97 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbysMXoxitxDHVGDXUZeFgejxfsVQo0-7iLBipX32VTPA6y229RbryRExdsyyVgYShIb/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwAANMCtjKb0_9urod6SbMjXi6jIGm1jVJWo17_4NRMLIeqiNhlfy4cEj6EqwbpoaU8/exec";
 
-// ================= LOGIN =================
-async function login() {
+// ================= PROTECCIÓN =================
+const user = localStorage.getItem("user");
 
-  let user = document.getElementById("user").value.trim();
-  let pass = document.getElementById("pass").value.trim();
-
-  try {
-
-    let res = await fetch(API_URL);
-    let users = await res.json();
-
-    let found = users.find(u =>
-      u.usuario === user &&
-      u.password === pass
-    );
-
-    if (!found) {
-      document.getElementById("msg").innerText = "Usuario o contraseña incorrectos";
-      return;
-    }
-
-    if (found.activo !== "SI") {
-      document.getElementById("msg").innerText = "Usuario desactivado";
-      return;
-    }
-
-    localStorage.setItem("user", user);
-
-    window.location.href = "app.html";
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("msg").innerText = "Error conexión API";
-  }
+if (!user) {
+  window.location.href = "index.html";
 }
 
 // ================= INIT =================
 window.onload = function () {
 
-  if (window.location.pathname.includes("app.html")) {
-    initApp();
-  }
-};
-
-function initApp() {
-
-  let user = localStorage.getItem("user");
-
-  if (!user) {
-    window.location.href = "index.html";
-    return;
-  }
-
   document.getElementById("welcome").innerText =
     "Usuario: " + user;
 
-  controlarUI(user);
-  cargarAvisos();
-}
+  controlarPermisos();
+  cargarListas();
+};
 
-// ================= UI =================
-function controlarUI(user) {
+// ================= PERMISOS =================
+function controlarPermisos() {
 
-  document.getElementById("btnAviso").style.display = "inline";
-
-  // Producción no puede generar OT
-  if (user === "produccion") {
+  if (user.toLowerCase() === "produccion") {
     document.getElementById("btnOT").style.display = "none";
   }
+}
+
+// ================= CARGAR LISTAS =================
+async function cargarListas() {
+
+  try {
+
+    const res = await fetch(API_URL + "?tipo=listas");
+    const data = await res.json();
+
+    llenar("maquina", data.MAQUINA);
+    llenar("proyecto", data.PROYECTO);
+    llenar("tipo", data.AVERIA);
+    llenar("hora", data.HORA);
+
+  } catch (err) {
+    console.error("Error cargando listas", err);
+  }
+}
+
+function llenar(id, valores) {
+
+  const select = document.getElementById(id);
+
+  select.innerHTML = "<option value=''>Seleccionar</option>";
+
+  valores.forEach(v => {
+    let opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+  });
 }
 
 // ================= AVISO =================
 async function crearAviso() {
 
-  let user = localStorage.getItem("user");
-
-  let data = {
+  const data = {
     tipo: "AVISO",
     id: Date.now(),
     fecha: new Date().toISOString(),
     usuario: user,
     maquina: document.getElementById("maquina").value,
     proyecto: document.getElementById("proyecto").value,
+    tipoAveria: document.getElementById("tipo").value,
+    hora: document.getElementById("hora").value,
     descripcion: document.getElementById("desc").value
   };
 
-  try {
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
 
-    await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify(data)
-    });
-
-    alert("Aviso creado correctamente");
-
-  } catch (err) {
-    console.error(err);
-    alert("Error al crear aviso");
-  }
+  alert("Aviso creado");
 }
 
 // ================= OT =================
 async function crearOT() {
 
-  let user = localStorage.getItem("user");
-
-  if (user === "produccion") {
-    alert("No tienes permisos para crear OT");
+  if (user.toLowerCase() === "produccion") {
+    alert("No tienes permisos");
     return;
   }
 
-  let data = {
+  const data = {
     tipo: "OT",
     fecha: new Date().toISOString(),
-    hora: new Date().toLocaleTimeString(),
+    hora: document.getElementById("hora").value,
     usuario: user,
     maquina: document.getElementById("maquina").value,
     proyecto: document.getElementById("proyecto").value,
@@ -122,34 +99,10 @@ async function crearOT() {
     descripcion: document.getElementById("desc").value
   };
 
-  try {
+  await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  });
 
-    await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify(data)
-    });
-
-    alert("OT creada correctamente");
-
-  } catch (err) {
-    console.error(err);
-    alert("Error al crear OT");
-  }
-}
-
-// ================= AVISOS =================
-async function cargarAvisos() {
-
-  try {
-
-    let res = await fetch(API_URL);
-    let users = await res.json();
-
-    // (esto solo es placeholder si luego separas endpoint de avisos)
-    document.getElementById("lista").innerHTML =
-      "Avisos cargados (pendiente endpoint específico)";
-
-  } catch (err) {
-    console.log("No se pudieron cargar avisos");
-  }
+  alert("OT creada");
 }
