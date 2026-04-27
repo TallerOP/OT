@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbyND0mtgA6PU28HIq0-2rJ6xUdu1XFmcuwpN4l710xQn5uZ1jA680eps9pY5x5flpZe/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzXnyxpeiVWnmjgFX9d1n2pONOvv0lBziCQHsCxNJha-VEOYpx6vOrZtDHoKOP1pzTg/exec";
 
 // ================= PROTECCIÓN =================
 const user = localStorage.getItem("user");
