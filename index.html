@@ -7,33 +7,29 @@
 
 <body>
 
-<div id="loginBox">
+<div id="login">
 
-  <h3>Login</h3>
-
-  <input id="user" placeholder="Usuario"><br>
-  <input id="pass" type="password" placeholder="Password"><br>
-
-  <button onclick="login()">Entrar</button>
+  <input id="user">
+  <input id="pass" type="password">
+  <button onclick="login()">Login</button>
 
 </div>
 
 
 <div id="app" style="display:none">
 
-  <h2>Generar aviso</h2>
+  <h3>Crear aviso</h3>
 
   <select id="maq"></select>
   <select id="proy"></select>
   <select id="tipo"></select>
+  <select id="hora"></select>
 
-  <br><br>
-
-  <textarea id="desc"></textarea><br>
+  <textarea id="desc"></textarea>
 
   <button onclick="crearAviso()">Generar aviso</button>
 
-  <h3>Avisos pendientes</h3>
+  <h3>Avisos</h3>
   <div id="avisos"></div>
 
 </div>

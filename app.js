@@ -1,5 +1,5 @@
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbz8LTXfv_Zc0fluOR6ntqwQWSkDCEkm4yasthm4L9kNOwsVfd1sNz2je37SMWun7ldY/exec";
+const BASE = "https://script.google.com/macros/s/AKfycbw2AjlWM_8Os3lE2UJnt31NuR4gh5HOEEqeU-hUNeFLDrc2NXUQ7KfB-7g4EiWp07o2/exec";
 
 let EMISOR = "";
 
@@ -8,7 +8,7 @@ let EMISOR = "";
 // =========================
 function login() {
 
-  fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
+  fetch(`${BASE}?action=login&user=${user.value}&pass=${pass.value}`)
     .then(r => r.json())
     .then(res => {
 
@@ -19,32 +19,29 @@ function login() {
 
       EMISOR = res.emisor;
 
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("app").style.display = "block";
+      login.style.display = "none";
+      app.style.display = "block";
 
       loadLists();
       loadAvisos();
 
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error de conexión");
     });
 
 }
 
 // =========================
-// LISTAS DROPDOWN
-// =========================
+// LISTAS (CORRECTO)
+— =========================
 function loadLists() {
 
-  fetch(`${BASE_URL}?action=listas`)
+  fetch(`${BASE}?action=listas`)
     .then(r => r.json())
     .then(data => {
 
-      fill("maq", data.maquinas);
-      fill("proy", data.proyectos);
-      fill("tipo", data.averias);
+      fill("maq", data.MAQUINA);
+      fill("proy", data.PROYECTO);
+      fill("tipo", data.AVERIA);
+      fill("hora", data.HORA);
 
     });
 
@@ -55,11 +52,11 @@ function fill(id, arr) {
   const sel = document.getElementById(id);
   sel.innerHTML = "";
 
-  arr.forEach(x => {
-    let opt = document.createElement("option");
-    opt.text = x;
-    opt.value = x;
-    sel.add(opt);
+  arr.forEach(v => {
+    let o = document.createElement("option");
+    o.value = v;
+    o.text = v;
+    sel.add(o);
   });
 
 }
@@ -69,7 +66,7 @@ function fill(id, arr) {
 // =========================
 function crearAviso() {
 
-  fetch(BASE_URL, {
+  fetch(BASE, {
     method: "POST",
     body: JSON.stringify({
       type: "aviso",
@@ -81,47 +78,29 @@ function crearAviso() {
       descripcion: desc.value
     })
   })
-  .then(r => r.json())
-  .then(res => {
-
-    if (!res.ok) {
-      alert("Error creando aviso");
-      return;
-    }
-
-    alert("Aviso creado correctamente");
-
-    desc.value = "";
-
+  .then(() => {
+    alert("Aviso creado");
     loadAvisos();
-
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Error de red");
   });
 
 }
 
 // =========================
-// LISTAR AVISOS
+// LISTAR
 // =========================
 function loadAvisos() {
 
-  fetch(`${BASE_URL}?action=avisos`)
+  fetch(`${BASE}?action=avisos`)
     .then(r => r.json())
     .then(data => {
 
-      const div = document.getElementById("avisos");
-      div.innerHTML = "";
+      avisos.innerHTML = "";
 
       data.forEach(a => {
 
-        div.innerHTML += `
-          <div style="border:1px solid #ccc; padding:8px; margin:5px;">
-            <b>${a.maquina}</b><br>
-            ${a.descripcion}<br>
-
+        avisos.innerHTML += `
+          <div>
+            ${a.maquina} - ${a.descripcion}
             <button onclick="crearOT(${a.row})">
               Generar OT
             </button>
@@ -135,30 +114,25 @@ function loadAvisos() {
 }
 
 // =========================
-// CONVERTIR OT
+// OT (SIN OT_ID + HORA CORRECTA)
 // =========================
 function crearOT(row) {
 
-  fetch(BASE_URL, {
+  fetch(BASE, {
     method: "POST",
     body: JSON.stringify({
       type: "ot",
       row: row,
-      emisor: EMISOR
+      emisor: EMISOR,
+      hora: hora.value,
+      maquina: maq.value,
+      proyecto: proy.value,
+      tipo: tipo.value
     })
   })
-  .then(r => r.json())
-  .then(res => {
-
-    if (!res.ok) {
-      alert("Error creando OT");
-      return;
-    }
-
-    alert("OT creada: " + res.ot);
-
+  .then(() => {
+    alert("OT creada");
     loadAvisos();
-
   });
 
 }
