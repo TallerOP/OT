@@ -1,38 +1,63 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <base target="_top">
+  <style>
+    body { font-family: Arial; padding: 20px; }
+
+    #app { display:none; }
+
+    .card {
+      border:1px solid #ddd;
+      padding:10px;
+      margin:8px 0;
+    }
+
+    #toast {
+      display:none;
+      position:fixed;
+      bottom:20px;
+      right:20px;
+      background:#28a745;
+      color:white;
+      padding:10px;
+      border-radius:6px;
+    }
+  </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="login">
-
-  <input id="user">
-  <input id="pass" type="password">
-  <button onclick="login()">Login</button>
-
+  <h3>Login</h3>
+  <input id="user" placeholder="Usuario"><br><br>
+  <input id="pass" type="password" placeholder="Password"><br><br>
+  <button onclick="login()">Entrar</button>
 </div>
 
+<!-- APP -->
+<div id="app">
 
-<div id="app" style="display:none">
-
-  <h3>Crear aviso</h3>
+  <h2>Crear aviso</h2>
 
   <select id="maq"></select>
   <select id="proy"></select>
   <select id="tipo"></select>
   <select id="hora"></select>
 
-  <textarea id="desc"></textarea>
+  <br><br>
+
+  <textarea id="desc" placeholder="Descripción"></textarea><br><br>
 
   <button onclick="crearAviso()">Generar aviso</button>
 
-  <h3>Avisos</h3>
+  <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
 
 </div>
+
+<div id="toast"></div>
 
 <script src="app.js"></script>
 

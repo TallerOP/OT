@@ -1,40 +1,61 @@
 
-const BASE = "https://script.google.com/macros/s/AKfycbw2AjlWM_8Os3lE2UJnt31NuR4gh5HOEEqeU-hUNeFLDrc2NXUQ7KfB-7g4EiWp07o2/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbyfh8IV0fUyIyGmNkqETLKrrsiEYOT3EI5nUPTkzepH36FVHbReDoYKjsJWqLyT0cGF/exec";
 
 let EMISOR = "";
 
 // =========================
-// LOGIN
+// TOAST
 // =========================
-function login() {
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
 
-  fetch(`${BASE}?action=login&user=${user.value}&pass=${pass.value}`)
-    .then(r => r.json())
-    .then(res => {
-
-      if (!res.ok) {
-        alert("Login incorrecto");
-        return;
-      }
-
-      EMISOR = res.emisor;
-
-      login.style.display = "none";
-      app.style.display = "block";
-
-      loadLists();
-      loadAvisos();
-
-    });
-
+  setTimeout(() => t.style.display = "none", 2000);
 }
 
 // =========================
-// LISTAS (CORRECTO)
-— =========================
+// LOGIN (POST REAL)
+// =========================
+function login() {
+
+  fetch(BASE_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      type: "login",
+      user: user.value,
+      pass: pass.value
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+
+    if (!res.ok) {
+      alert("Login incorrecto");
+      return;
+    }
+
+    EMISOR = res.emisor;
+
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "block";
+
+    loadLists();
+    loadAvisos();
+
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error de conexión");
+  });
+}
+
+// =========================
+// LISTAS (MAQUINA / PROY / TIPO / HORA)
+// =========================
 function loadLists() {
 
-  fetch(`${BASE}?action=listas`)
+  fetch(BASE_URL + "?action=listas")
     .then(r => r.json())
     .then(data => {
 
@@ -66,7 +87,7 @@ function fill(id, arr) {
 // =========================
 function crearAviso() {
 
-  fetch(BASE, {
+  fetch(BASE_URL, {
     method: "POST",
     body: JSON.stringify({
       type: "aviso",
@@ -78,29 +99,47 @@ function crearAviso() {
       descripcion: desc.value
     })
   })
-  .then(() => {
-    alert("Aviso creado");
+  .then(r => r.json())
+  .then(res => {
+
+    if (!res.ok) {
+      alert("Error creando aviso");
+      return;
+    }
+
+    toast("Aviso creado correctamente");
+
+    desc.value = "";
+
     loadAvisos();
+
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error de red");
   });
 
 }
 
 // =========================
-// LISTAR
+// LISTAR AVISOS
 // =========================
 function loadAvisos() {
 
-  fetch(`${BASE}?action=avisos`)
+  fetch(BASE_URL + "?action=avisos")
     .then(r => r.json())
     .then(data => {
 
-      avisos.innerHTML = "";
+      const div = document.getElementById("avisos");
+      div.innerHTML = "";
 
       data.forEach(a => {
 
-        avisos.innerHTML += `
-          <div>
-            ${a.maquina} - ${a.descripcion}
+        div.innerHTML += `
+          <div class="card">
+            <b>${a.maquina}</b><br>
+            ${a.descripcion}<br>
+
             <button onclick="crearOT(${a.row})">
               Generar OT
             </button>
@@ -114,25 +153,30 @@ function loadAvisos() {
 }
 
 // =========================
-// OT (SIN OT_ID + HORA CORRECTA)
+// CONVERTIR OT
 // =========================
 function crearOT(row) {
 
-  fetch(BASE, {
+  fetch(BASE_URL, {
     method: "POST",
     body: JSON.stringify({
       type: "ot",
       row: row,
-      emisor: EMISOR,
-      hora: hora.value,
-      maquina: maq.value,
-      proyecto: proy.value,
-      tipo: tipo.value
+      emisor: EMISOR
     })
   })
-  .then(() => {
-    alert("OT creada");
+  .then(r => r.json())
+  .then(res => {
+
+    if (!res.ok) {
+      alert("Error creando OT");
+      return;
+    }
+
+    toast("OT creada: " + res.ot);
+
     loadAvisos();
+
   });
 
 }
