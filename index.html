@@ -1,97 +1,44 @@
+
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Sistema OT - Login</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 80px auto;
-      text-align: center;
-    }
-
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-    }
-
-    button {
-      padding: 10px 20px;
-      cursor: pointer;
-    }
-
-    #msg {
-      margin-top: 15px;
-      color: red;
-    }
-  </style>
+  <base target="_top">
 </head>
 
 <body>
 
-  <h2>Login Sistema OT</h2>
+<div id="loginBox">
+
+  <h3>Login</h3>
 
   <input id="user" placeholder="Usuario"><br>
-  <input id="pass" type="password" placeholder="Contraseña"><br>
+  <input id="pass" type="password" placeholder="Password"><br>
 
   <button onclick="login()">Entrar</button>
 
-  <p id="msg"></p>
+</div>
 
-<script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyfw5mqcyCBujW385mjh9kc8ciE0pKEuPcfMSINsLun0uW7fuI8QniOlIwH1-fKHDAI/exec";
+<div id="app" style="display:none">
 
-async function login() {
+  <h2>Generar aviso</h2>
 
-  const user = document.getElementById("user").value.trim();
-  const pass = document.getElementById("pass").value.trim();
+  <select id="maq"></select>
+  <select id="proy"></select>
+  <select id="tipo"></select>
 
-  if (!user || !pass) {
-    document.getElementById("msg").innerText = "Rellena usuario y contraseña";
-    return;
-  }
+  <br><br>
 
-  try {
+  <textarea id="desc"></textarea><br>
 
-    const res = await fetch(API_URL);
-    const text = await res.text();   // 🔥 clave para evitar errores
-    const users = JSON.parse(text);
+  <button onclick="crearAviso()">Generar aviso</button>
 
-    console.log("Usuarios recibidos:", users);
+  <h3>Avisos pendientes</h3>
+  <div id="avisos"></div>
 
-    const found = users.find(u =>
-      u.usuario === user &&
-      u.password === pass
-    );
+</div>
 
-    if (!found) {
-      document.getElementById("msg").innerText = "Usuario o contraseña incorrectos";
-      return;
-    }
-
-    if (found.activo !== "SI") {
-      document.getElementById("msg").innerText = "Usuario desactivado";
-      return;
-    }
-
-    // Guardar sesión
-    localStorage.setItem("user", user);
-
-    // Redirigir
-    window.location.href = "app.html";
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById("msg").innerText =
-      "Error conectando con el servidor";
-  }
-}
-
-</script>
+<script src="app.js"></script>
 
 </body>
 </html>

@@ -1,20 +1,114 @@
 
-const URL = "https://script.google.com/macros/s/AKfycbyfw5mqcyCBujW385mjh9kc8ciE0pKEuPcfMSINsLun0uW7fuI8QniOlIwH1-fKHDAI/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbz8LTXfv_Zc0fluOR6ntqwQWSkDCEkm4yasthm4L9kNOwsVfd1sNz2je37SMWun7ldY/exec";
 
-function toast(msg) {
-  const t = document.getElementById("toast");
-  t.innerText = msg;
-  t.style.display = "block";
+let EMISOR = "";
 
-  setTimeout(() => t.style.display = "none", 2500);
+// =========================
+// LOGIN
+// =========================
+function login() {
+
+  fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
+    .then(r => r.json())
+    .then(res => {
+
+      if (!res.ok) {
+        alert("Login incorrecto");
+        return;
+      }
+
+      EMISOR = res.emisor;
+
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("app").style.display = "block";
+
+      loadLists();
+      loadAvisos();
+
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error de conexión");
+    });
+
 }
 
 // =========================
-// CARGAR AVISOS
+// LISTAS DROPDOWN
+// =========================
+function loadLists() {
+
+  fetch(`${BASE_URL}?action=listas`)
+    .then(r => r.json())
+    .then(data => {
+
+      fill("maq", data.maquinas);
+      fill("proy", data.proyectos);
+      fill("tipo", data.averias);
+
+    });
+
+}
+
+function fill(id, arr) {
+
+  const sel = document.getElementById(id);
+  sel.innerHTML = "";
+
+  arr.forEach(x => {
+    let opt = document.createElement("option");
+    opt.text = x;
+    opt.value = x;
+    sel.add(opt);
+  });
+
+}
+
+// =========================
+// CREAR AVISO
+// =========================
+function crearAviso() {
+
+  fetch(BASE_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      type: "aviso",
+      id: "AV-" + Date.now(),
+      usuario: EMISOR,
+      maquina: maq.value,
+      proyecto: proy.value,
+      tipo: tipo.value,
+      descripcion: desc.value
+    })
+  })
+  .then(r => r.json())
+  .then(res => {
+
+    if (!res.ok) {
+      alert("Error creando aviso");
+      return;
+    }
+
+    alert("Aviso creado correctamente");
+
+    desc.value = "";
+
+    loadAvisos();
+
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Error de red");
+  });
+
+}
+
+// =========================
+// LISTAR AVISOS
 // =========================
 function loadAvisos() {
 
-  fetch("?action=getAvisos")
+  fetch(`${BASE_URL}?action=avisos`)
     .then(r => r.json())
     .then(data => {
 
@@ -24,7 +118,7 @@ function loadAvisos() {
       data.forEach(a => {
 
         div.innerHTML += `
-          <div class="card">
+          <div style="border:1px solid #ccc; padding:8px; margin:5px;">
             <b>${a.maquina}</b><br>
             ${a.descripcion}<br>
 
@@ -33,6 +127,7 @@ function loadAvisos() {
             </button>
           </div>
         `;
+
       });
 
     });
@@ -40,51 +135,30 @@ function loadAvisos() {
 }
 
 // =========================
-// CREAR AVISO
-// =========================
-function crearAviso() {
-
-  const data = {
-    type: "aviso",
-    id: "AV-" + Date.now(),
-    usuario: "WEB",
-    maquina: maq.value,
-    proyecto: proy.value,
-    tipo: tipo.value,
-    descripcion: desc.value
-  };
-
-  fetch("", {
-    method: "POST",
-    body: JSON.stringify(data)
-  })
-  .then(r => r.json())
-  .then(() => {
-    toast("Aviso creado");
-    loadAvisos();
-  });
-
-}
-
-// =========================
-// CONVERTIR A OT
+// CONVERTIR OT
 // =========================
 function crearOT(row) {
 
-  fetch("", {
+  fetch(BASE_URL, {
     method: "POST",
     body: JSON.stringify({
-      type: "convertir_ot",
-      row: row
+      type: "ot",
+      row: row,
+      emisor: EMISOR
     })
   })
   .then(r => r.json())
   .then(res => {
-    toast("OT creada: " + res.ot);
+
+    if (!res.ok) {
+      alert("Error creando OT");
+      return;
+    }
+
+    alert("OT creada: " + res.ot);
+
     loadAvisos();
+
   });
 
 }
-
-// INIT
-loadAvisos();
