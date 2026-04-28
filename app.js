@@ -1,94 +1,90 @@
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyYV-BHDGbBc5SowKb1j0t3ObDHp6NkVBv3Q26muCkjZ2JOu-Y8Zlw8-NdM9HNkL974/exec";
+const URL = "https://script.google.com/macros/s/AKfycbyfw5mqcyCBujW385mjh9kc8ciE0pKEuPcfMSINsLun0uW7fuI8QniOlIwH1-fKHDAI/exec";
 
-// ==========================
-// DESPLEGABLES
-// ==========================
-async function cargarDropdowns() {
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
 
-  const res = await fetch(API_URL + "?tipo=dropdowns");
-  const data = await res.json();
-
-  fill("maquina", data.maquinas);
-  fill("proyecto", data.proyectos);
-  fill("averia", data.averias);
+  setTimeout(() => t.style.display = "none", 2500);
 }
 
-function fill(id, arr) {
+// =========================
+// CARGAR AVISOS
+// =========================
+function loadAvisos() {
 
-  const sel = document.getElementById(id);
-  sel.innerHTML = "";
+  fetch("?action=getAvisos")
+    .then(r => r.json())
+    .then(data => {
 
-  arr.forEach(v => {
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    sel.appendChild(opt);
-  });
+      const div = document.getElementById("avisos");
+      div.innerHTML = "";
+
+      data.forEach(a => {
+
+        div.innerHTML += `
+          <div class="card">
+            <b>${a.maquina}</b><br>
+            ${a.descripcion}<br>
+
+            <button onclick="crearOT(${a.row})">
+              Generar OT
+            </button>
+          </div>
+        `;
+      });
+
+    });
+
 }
 
-// ==========================
-// CREAR OT
-// ==========================
-async function crearOT(form) {
-
-  await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      tipo: "OT",
-      id: crypto.randomUUID(),
-      hora: form.hora,
-      fecha: form.fecha,
-      emisor: form.emisor,
-      maquina: form.maquina,
-      proyecto: form.proyecto,
-      codigoAveria: form.codigoAveria,
-      descripcion: form.descripcion
-    })
-  });
-}
-
-// ==========================
+// =========================
 // CREAR AVISO
-// ==========================
-async function crearAviso(form) {
+// =========================
+function crearAviso() {
 
-  await fetch(API_URL, {
+  const data = {
+    type: "aviso",
+    id: "AV-" + Date.now(),
+    usuario: "WEB",
+    maquina: maq.value,
+    proyecto: proy.value,
+    tipo: tipo.value,
+    descripcion: desc.value
+  };
+
+  fetch("", {
+    method: "POST",
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(() => {
+    toast("Aviso creado");
+    loadAvisos();
+  });
+
+}
+
+// =========================
+// CONVERTIR A OT
+// =========================
+function crearOT(row) {
+
+  fetch("", {
     method: "POST",
     body: JSON.stringify({
-      tipo: "AVISO",
-      id: crypto.randomUUID(),
-      fecha: form.fecha,
-      hora: form.hora,
-      usuario: form.usuario,
-      maquina: form.maquina,
-      proyecto: form.proyecto,
-      tipoAveria: form.tipoAveria,
-      descripcion: form.descripcion
+      type: "convertir_ot",
+      row: row
     })
+  })
+  .then(r => r.json())
+  .then(res => {
+    toast("OT creada: " + res.ot);
+    loadAvisos();
   });
+
 }
 
-// ==========================
-// EXPORT OTS
-// ==========================
-async function getOTs() {
-
-  const res = await fetch(API_URL + "?tipo=ots_export");
-  const text = await res.text();
-
-  return text.split("\n").map(l => {
-    const f = l.split("|");
-    return {
-      ot: f[0],
-      hora: f[1],
-      fecha: f[2],
-      estado: f[3],
-      emisor: f[4],
-      maquina: f[5],
-      proyecto: f[6],
-      averia: f[7],
-      descripcion: f[8]
-    };
-  });
-}
+// INIT
+loadAvisos();
