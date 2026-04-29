@@ -1,16 +1,18 @@
+
 <!DOCTYPE html>
 <html>
 <head>
   <base target="_top">
   <style>
+
     body { font-family: Arial; padding:20px; }
+
     #app { display:none; }
 
     .card {
       border:1px solid #ccc;
       padding:10px;
       margin:8px 0;
-      border-radius:6px;
     }
 
     #toast {
@@ -21,8 +23,8 @@
       background:#28a745;
       color:white;
       padding:10px;
-      border-radius:6px;
     }
+
   </style>
 </head>
 
@@ -50,19 +52,163 @@
 
   <br><br>
 
-  <textarea id="desc" placeholder="Descripción"></textarea><br><br>
+  <textarea id="desc"></textarea><br><br>
 
   <button onclick="crearAviso()">Generar aviso</button>
 
-  <h3>Avisos pendientes</h3>
+  <h3>Avisos</h3>
   <div id="avisos"></div>
 
 </div>
 
 <div id="toast"></div>
 
-<!-- 🔥 CARGA REAL DEL JS -->
-<?!= HtmlService.createHtmlOutputFromFile('app').getContent(); ?>
+<script>
+
+let EMISOR = "";
+
+// =========================
+// LOGIN (ESTO ES CLAVE)
+// =========================
+function login() {
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+
+      if (!res.ok) {
+        alert("Login incorrecto");
+        return;
+      }
+
+      EMISOR = res.emisor;
+
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("app").style.display = "block";
+
+      loadLists();
+      loadAvisos();
+
+    })
+    .login(user.value, pass.value);
+}
+
+
+// =========================
+// LISTAS
+// =========================
+function loadLists() {
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+
+      fill("maq", data.MAQUINA);
+      fill("proy", data.PROYECTO);
+      fill("tipo", data.AVERIA);
+      fill("hora", data.HORA);
+
+    })
+    .getListas();
+}
+
+function fill(id, arr) {
+
+  const sel = document.getElementById(id);
+  sel.innerHTML = "";
+
+  arr.forEach(v => {
+    let o = document.createElement("option");
+    o.value = v;
+    o.text = v;
+    sel.add(o);
+  });
+
+}
+
+
+// =========================
+// CREAR AVISO
+// =========================
+function crearAviso() {
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+
+      if (!res.ok) {
+        alert("Error");
+        return;
+      }
+
+      alert("Aviso creado");
+
+      desc.value = "";
+
+      loadAvisos();
+
+    })
+    .crearAviso({
+      id: "AV-" + Date.now(),
+      usuario: EMISOR,
+      maquina: maq.value,
+      proyecto: proy.value,
+      tipo: tipo.value,
+      descripcion: desc.value
+    });
+}
+
+
+// =========================
+// AVISOS
+// =========================
+function loadAvisos() {
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+
+      avisos.innerHTML = "";
+
+      data.forEach(a => {
+
+        avisos.innerHTML += `
+          <div class="card">
+            <b>${a.maquina}</b><br>
+            ${a.descripcion}<br>
+            <button onclick="crearOT(${a.row})">Generar OT</button>
+          </div>
+        `;
+
+      });
+
+    })
+    .getAvisos();
+}
+
+
+// =========================
+// OT
+// =========================
+function crearOT(row) {
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+
+      if (!res.ok) {
+        alert("Error OT");
+        return;
+      }
+
+      alert("OT creada");
+
+      loadAvisos();
+
+    })
+    .crearOT({
+      row: row,
+      emisor: EMISOR,
+      hora: hora.value
+    });
+}
+
+</script>
 
 </body>
 </html>

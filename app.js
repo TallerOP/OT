@@ -1,5 +1,5 @@
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbwVnmPK99KthEa9TzkK3p-IfTTUBmdDGeTYzC7w_zW6GqnqcuXzEmaAMWQ7nGEV2xtz/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzH_zY4JaWmP2hJw-PZ5K7tBfsZtSGuh1SC1wIP8a8m95ZGFrwW3CQWLyDqO90Um1Gn/exec";
 
 let EMISOR = "";
 
