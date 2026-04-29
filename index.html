@@ -3,14 +3,14 @@
 <head>
   <base target="_top">
   <style>
-    body { font-family: Arial; padding: 20px; }
-
+    body { font-family: Arial; padding:20px; }
     #app { display:none; }
 
     .card {
-      border:1px solid #ddd;
+      border:1px solid #ccc;
       padding:10px;
       margin:8px 0;
+      border-radius:6px;
     }
 
     #toast {
@@ -29,10 +29,12 @@
 <body>
 
 <!-- LOGIN -->
-<div id="login">
+<div id="loginBox">
   <h3>Login</h3>
+
   <input id="user" placeholder="Usuario"><br><br>
   <input id="pass" type="password" placeholder="Password"><br><br>
+
   <button onclick="login()">Entrar</button>
 </div>
 
@@ -59,7 +61,133 @@
 
 <div id="toast"></div>
 
-<script src="app.js"></script>
+<script>
+
+let EMISOR = "";
+
+// ===== TOAST =====
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+  setTimeout(() => t.style.display = "none", 2000);
+}
+
+// ===== LOGIN =====
+function login() {
+
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+
+      if (!res || !res.ok) {
+        alert("Login incorrecto");
+        return;
+      }
+
+      EMISOR = res.emisor;
+
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("app").style.display = "block";
+
+      loadLists();
+      loadAvisos();
+
+    })
+    .login(u, p);
+}
+
+// ===== LISTAS =====
+function loadLists() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      fill("maq", data.MAQUINA);
+      fill("proy", data.PROYECTO);
+      fill("tipo", data.AVERIA);
+      fill("hora", data.HORA);
+    })
+    .getListas();
+}
+
+function fill(id, arr) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = "";
+  arr.forEach(v => {
+    let o = document.createElement("option");
+    o.value = v;
+    o.text = v;
+    sel.add(o);
+  });
+}
+
+// ===== CREAR AVISO =====
+function crearAviso() {
+
+  const data = {
+    id: "AV-" + Date.now(),
+    usuario: EMISOR,
+    maquina: maq.value,
+    proyecto: proy.value,
+    tipo: tipo.value,
+    descripcion: desc.value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return alert("Error");
+      toast("Aviso creado");
+      desc.value = "";
+      loadAvisos();
+    })
+    .crearAviso(data);
+}
+
+// ===== LISTAR =====
+function loadAvisos() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+
+      const div = document.getElementById("avisos");
+      div.innerHTML = "";
+
+      data.forEach(a => {
+        div.innerHTML += `
+          <div class="card">
+            <b>${a.maquina}</b><br>
+            ${a.descripcion}<br><br>
+            <button onclick="crearOT(${a.row})">Generar OT</button>
+          </div>
+        `;
+      });
+
+    })
+    .getAvisos();
+}
+
+// ===== CREAR OT =====
+function crearOT(row) {
+
+  const data = {
+    row: row,
+    emisor: EMISOR,
+    hora: hora.value,
+    maquina: maq.value,
+    proyecto: proy.value,
+    tipo: tipo.value
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res.ok) return alert("Error OT");
+      toast("OT creada");
+      loadAvisos();
+    })
+    .crearOT(data);
+}
+
+</script>
 
 </body>
 </html>
