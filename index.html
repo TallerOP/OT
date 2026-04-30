@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Sistema OT Industrial</title>
+<title>Sistema OT</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -17,7 +17,7 @@ background-size:cover;
 
 .overlay{
 min-height:100vh;
-background:rgba(255,255,255,0.93);
+background:rgba(255,255,255,0.92);
 padding:15px;
 box-sizing:border-box;
 }
@@ -35,7 +35,7 @@ box-shadow:0 4px 15px rgba(0,0,0,0.1);
 /* APP */
 #app{
 display:none;
-max-width:600px;
+max-width:650px;
 margin:auto;
 }
 
@@ -46,24 +46,6 @@ justify-content:space-between;
 align-items:center;
 }
 
-.logout{
-background:#c62828;
-color:white;
-border:none;
-padding:8px 12px;
-border-radius:8px;
-cursor:pointer;
-}
-
-/* CARDS */
-.card{
-background:white;
-padding:12px;
-margin-top:10px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-
 /* INPUTS */
 input,select,textarea{
 width:100%;
@@ -72,7 +54,6 @@ margin-top:6px;
 border-radius:8px;
 border:1px solid #ccc;
 box-sizing:border-box;
-font-size:15px;
 }
 
 /* BUTTONS */
@@ -89,6 +70,15 @@ cursor:pointer;
 .btn-aviso{background:#2e7d32;color:white;}
 .btn-ot{background:#1976d2;color:white;}
 .btn-del{background:#616161;color:white;}
+.logout{background:#c62828;color:white;}
+
+.card{
+background:white;
+padding:12px;
+margin-top:10px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
 
 .hidden{display:none;}
 
@@ -99,7 +89,7 @@ cursor:pointer;
 
 <div class="overlay">
 
-<!-- LOGIN -->
+<!-- LOGIN RESTAURADO -->
 <div id="loginBox">
 <h2>Login</h2>
 
@@ -114,17 +104,16 @@ cursor:pointer;
 
 <div class="header">
 <h2>Sistema OT</h2>
-<button class="logout" onclick="logout()">Salir</button>
+<button class="logout" onclick="logout()">Cerrar sesión</button>
 </div>
 
-<!-- FORM AVISO -->
 <h3>Generar Aviso</h3>
 
 <select id="maq"></select>
 <select id="proy"></select>
 <select id="tipo"></select>
 
-<textarea id="desc" placeholder="Descripción"></textarea>
+<textarea id="desc"></textarea>
 
 <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
 
@@ -132,7 +121,6 @@ cursor:pointer;
 
 <hr>
 
-<!-- AVISOS -->
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 
@@ -142,13 +130,13 @@ cursor:pointer;
 
 <script>
 
-const API="TU_URL_AQUI";
+const API="https://script.google.com/macros/s/AKfycbz7faraOb80Glef8kxPNoEU09EA2v7s5AO6OHJ3ToJBVfUyjMAaz3vP_Mn4L2jgG5iy/exec";
 
 let USER="";
 let EMISOR="";
 let ROL="";
 
-/* ================= LOGIN ================= */
+/* ================= LOGIN REAL ================= */
 async function login(){
 
 const r=await fetch(API+"?action=login&user="+user.value+"&pass="+pass.value);
@@ -166,7 +154,7 @@ ROL=user.value.toLowerCase();
 loginBox.style.display="none";
 app.style.display="block";
 
-/* PRODUCCIÓN LIMITADO */
+/* PRODUCCIÓN SIN OT */
 if(ROL==="produccion"){
 document.getElementById("btnOT").style.display="none";
 }
@@ -175,7 +163,7 @@ loadLists();
 loadAvisos();
 }
 
-/* ================= LISTAS ================= */
+/* LISTAS */
 async function loadLists(){
 
 const r=await fetch(API+"?action=listas");
@@ -186,7 +174,7 @@ proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
 tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
-/* ================= CREAR AVISO ================= */
+/* AVISO */
 async function crearAviso(){
 
 await fetch(API,{
@@ -205,7 +193,7 @@ desc.value="";
 loadAvisos();
 }
 
-/* ================= AVISOS ================= */
+/* AVISOS */
 async function loadAvisos(){
 
 const r=await fetch(API+"?action=avisos");
@@ -218,7 +206,7 @@ d.forEach(a=>{
 avisos.innerHTML+=`
 <div class="card">
 <b>${a.maquina}</b><br>
-${a.descripcion}
+${a.descripcion}<br>
 
 <button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
 <button class="btn-del" onclick="eliminar(${a.row})">Eliminar aviso</button>
@@ -229,7 +217,12 @@ ${a.descripcion}
 
 }
 
-/* ================= CONVERTIR ================= */
+/* OT */
+function goOT(){
+window.location="ot.html";
+}
+
+/* CONVERTIR */
 async function convertir(row){
 
 await fetch(API+"?action=convertirAviso&row="+row);
@@ -237,7 +230,7 @@ await fetch(API+"?action=convertirAviso&row="+row);
 window.location="ot.html?row="+row;
 }
 
-/* ================= ELIMINAR ================= */
+/* ELIMINAR */
 async function eliminar(row){
 
 await fetch(API+"?action=rechazarAviso&row="+row+"&user="+USER);
@@ -245,12 +238,7 @@ await fetch(API+"?action=rechazarAviso&row="+row+"&user="+USER);
 loadAvisos();
 }
 
-/* ================= OT ================= */
-function goOT(){
-window.location="ot.html";
-}
-
-/* ================= LOGOUT ================= */
+/* LOGOUT */
 function logout(){
 location.reload();
 }
