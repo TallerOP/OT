@@ -16,8 +16,10 @@
 <!-- LOGIN -->
 <div id="loginBox">
   <h2>Login</h2>
+
   <input id="user" placeholder="Usuario"><br><br>
   <input id="pass" type="password" placeholder="Password"><br><br>
+
   <button onclick="login()">Entrar</button>
 </div>
 
@@ -43,31 +45,47 @@
 
 <script>
 
-// 🔴 TU URL REAL DE APPS SCRIPT
 const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
 
 let USER = "";
 let EMISOR = "";
 
-// ================= LOGIN =================
+// ================= LOGIN (FIXED) =================
 async function login() {
 
-  const res = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
-  const data = await res.json();
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
 
-  if (!data.ok) {
-    alert("Login incorrecto");
+  if (!u || !p) {
+    alert("Completa usuario y contraseña");
     return;
   }
 
-  USER = user.value;
-  EMISOR = data.emisor;
+  try {
 
-  loginBox.style.display = "none";
-  app.style.display = "block";
+    const url = `${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
 
-  loadLists();
-  loadAvisos();
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!data || !data.ok) {
+      alert("Login incorrecto");
+      return;
+    }
+
+    USER = u;
+    EMISOR = data.emisor || "";
+
+    loginBox.style.display = "none";
+    app.style.display = "block";
+
+    loadLists();
+    loadAvisos();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error de conexión con el servidor");
+  }
 }
 
 // ================= LISTAS =================
@@ -86,7 +104,7 @@ function fill(id, arr) {
   const sel = document.getElementById(id);
   sel.innerHTML = "";
 
-  arr.forEach(v => {
+  (arr || []).forEach(v => {
     const o = document.createElement("option");
     o.value = v;
     o.text = v;
@@ -94,10 +112,10 @@ function fill(id, arr) {
   });
 }
 
-// ================= 🔴 FIX CLAVE: CREAR AVISO =================
+// ================= CREAR AVISO =================
 async function crearAviso() {
 
-  const url = https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec;
+  const url = new URL(API);
 
   url.searchParams.append("action", "crearAviso");
   url.searchParams.append("id", "AV-" + Date.now());
@@ -113,7 +131,6 @@ async function crearAviso() {
     const data = await res.json();
 
     if (!data.ok) {
-      console.error(data);
       alert("Error creando aviso");
       return;
     }
@@ -125,7 +142,7 @@ async function crearAviso() {
 
   } catch (err) {
     console.error(err);
-    alert("Error de conexión con el servidor");
+    alert("Error de conexión");
   }
 }
 
@@ -137,7 +154,7 @@ async function loadAvisos() {
 
   avisos.innerHTML = "";
 
-  data.forEach(a => {
+  (data || []).forEach(a => {
 
     avisos.innerHTML += `
       <div class="card">
