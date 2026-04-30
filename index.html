@@ -8,7 +8,7 @@
 
 <style>
 
-/* ================= FONDO ================= */
+/* ================= FONDO RESPONSIVE REAL ================= */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -16,7 +16,7 @@ body {
   background-size: cover;
 }
 
-/* overlay oscuro industrial */
+/* overlay oscuro */
 .overlay {
   background: rgba(0,0,0,0.65);
   min-height: 100vh;
@@ -24,7 +24,7 @@ body {
   box-sizing: border-box;
 }
 
-/* ================= LOGIN ================= */
+/* ================= CONTENEDORES ================= */
 #loginBox, #app {
   max-width: 420px;
   margin: auto;
@@ -38,7 +38,6 @@ body {
 /* ================= TITULOS ================= */
 h2, h3 {
   text-align: center;
-  margin-top: 10px;
 }
 
 /* ================= CAMPOS ================= */
@@ -71,19 +70,10 @@ button {
   cursor: pointer;
 }
 
-.btn-ok {
-  background: #1e88e5;
-  color: white;
-}
+.btn-ok { background:#1e88e5; color:white; }
+.btn-ok:hover { background:#1565c0; }
 
-.btn-ok:hover {
-  background: #1565c0;
-}
-
-.btn-secondary {
-  background: #444;
-  color: white;
-}
+.btn-secondary { background:#444; color:white; }
 
 /* ================= AVISOS ================= */
 .card {
@@ -97,8 +87,6 @@ button {
 
 .card button {
   width: 48%;
-  margin-top: 8px;
-  font-size: 14px;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -110,11 +98,6 @@ button {
   }
 
   button {
-    font-size: 15px;
-    padding: 12px;
-  }
-
-  input, select, textarea {
     font-size: 15px;
   }
 }
@@ -157,7 +140,9 @@ button {
   <textarea id="desc"></textarea>
 
   <button class="btn-ok" onclick="crearAviso()">Generar Aviso</button>
-  <button class="btn-secondary" onclick="goOT()">Generar OT</button>
+
+  <!-- 🔴 BOTÓN OT (solo técnicos) -->
+  <button id="btnOT" class="btn-secondary" onclick="goOT()">Generar OT</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
@@ -176,8 +161,8 @@ let EMISOR = "";
 /* ================= LOGIN ================= */
 async function login() {
 
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
+  const u = user.value;
+  const p = pass.value;
 
   const res = await fetch(`${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
   const data = await res.json();
@@ -192,6 +177,11 @@ async function login() {
 
   loginBox.style.display = "none";
   app.style.display = "block";
+
+  /* 🔴 CONTROL DE ROLES */
+  if (USER.toLowerCase() === "produccion") {
+    document.getElementById("btnOT").style.display = "none";
+  }
 
   loadLists();
   loadAvisos();
