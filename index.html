@@ -1,66 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Sistema OT</title>
+<meta charset="UTF-8">
+<title>Sistema OT</title>
 
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    #app { display:none; }
-    .card { border:1px solid #ccc; padding:10px; margin:10px 0; }
-    .field { margin-bottom: 10px; }
-    label { font-weight: bold; display:block; margin-bottom:5px; }
-    button { margin-right: 10px; }
-  </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* ================= FONDO ================= */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: url("op.png") no-repeat center center fixed;
+  background-size: cover;
+}
+
+/* overlay oscuro industrial */
+.overlay {
+  background: rgba(0,0,0,0.65);
+  min-height: 100vh;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+/* ================= LOGIN ================= */
+#loginBox, #app {
+  max-width: 420px;
+  margin: auto;
+  background: rgba(20,20,20,0.9);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+}
+
+/* ================= TITULOS ================= */
+h2, h3 {
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* ================= CAMPOS ================= */
+label {
+  display:block;
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+/* ================= BOTONES ================= */
+button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-ok {
+  background: #1e88e5;
+  color: white;
+}
+
+.btn-ok:hover {
+  background: #1565c0;
+}
+
+.btn-secondary {
+  background: #444;
+  color: white;
+}
+
+/* ================= AVISOS ================= */
+.card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 10px;
+  color: white;
+  backdrop-filter: blur(4px);
+}
+
+.card button {
+  width: 48%;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 600px) {
+
+  #loginBox, #app {
+    width: 95%;
+    padding: 15px;
+  }
+
+  button {
+    font-size: 15px;
+    padding: 12px;
+  }
+
+  input, select, textarea {
+    font-size: 15px;
+  }
+}
+
+</style>
 </head>
 
 <body>
 
+<div class="overlay">
+
 <!-- LOGIN -->
 <div id="loginBox">
-  <h2>Login</h2>
+  <h2>Acceso Sistema OT</h2>
 
-  <input id="user" placeholder="Usuario"><br><br>
-  <input id="pass" type="password" placeholder="Password"><br><br>
+  <label>Usuario</label>
+  <input id="user">
 
-  <button onclick="login()">Entrar</button>
+  <label>Password</label>
+  <input id="pass" type="password">
+
+  <button class="btn-ok" onclick="login()">Entrar</button>
 </div>
 
 <!-- APP -->
-<div id="app">
+<div id="app" style="display:none">
 
-  <h2>Generar Aviso / OT</h2>
+  <h2>Generar Aviso</h2>
 
-  <!-- MAQUINA -->
-  <div class="field">
-    <label>Máquina</label>
-    <select id="maq"></select>
-  </div>
+  <label>Máquina</label>
+  <select id="maq"></select>
 
-  <!-- PROYECTO -->
-  <div class="field">
-    <label>Proyecto</label>
-    <select id="proy"></select>
-  </div>
+  <label>Proyecto</label>
+  <select id="proy"></select>
 
-  <!-- TIPO AVERÍA -->
-  <div class="field">
-    <label>Tipo de Avería</label>
-    <select id="tipo"></select>
-  </div>
+  <label>Tipo de Avería</label>
+  <select id="tipo"></select>
 
-  <!-- DESCRIPCIÓN -->
-  <div class="field">
-    <label>Descripción</label>
-    <textarea id="desc" placeholder="Descripción"></textarea>
-  </div>
+  <label>Descripción</label>
+  <textarea id="desc"></textarea>
 
-  <!-- BOTONES PRINCIPALES -->
-  <button onclick="crearAviso()">Generar Aviso</button>
-  <button onclick="goOT()">Generar OT</button>
+  <button class="btn-ok" onclick="crearAviso()">Generar Aviso</button>
+  <button class="btn-secondary" onclick="goOT()">Generar OT</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
+
+</div>
 
 </div>
 
@@ -71,11 +173,11 @@ const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrp
 let USER = "";
 let EMISOR = "";
 
-// ================= LOGIN =================
+/* ================= LOGIN ================= */
 async function login() {
 
-  const u = user.value;
-  const p = pass.value;
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
 
   const res = await fetch(`${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
   const data = await res.json();
@@ -95,7 +197,7 @@ async function login() {
   loadAvisos();
 }
 
-// ================= LISTAS =================
+/* ================= LISTAS ================= */
 async function loadLists() {
 
   const res = await fetch(API + "?action=listas");
@@ -119,7 +221,7 @@ function fill(id, arr) {
   });
 }
 
-// ================= CREAR AVISO =================
+/* ================= CREAR AVISO ================= */
 async function crearAviso() {
 
   const url = new URL(API);
@@ -142,7 +244,7 @@ async function crearAviso() {
   }
 }
 
-// ================= AVISOS =================
+/* ================= AVISOS ================= */
 async function loadAvisos() {
 
   const res = await fetch(API + "?action=avisos");
@@ -155,31 +257,25 @@ async function loadAvisos() {
     avisos.innerHTML += `
       <div class="card">
         <b>${a.maquina}</b><br>
-        ${a.descripcion}<br><br>
+        ${a.descripcion}<br>
 
-        <button onclick="rechazar('${a.row}')">Rechazar</button>
-        <button onclick="convertir('${a.row}')">Convertir a OT</button>
+        <button class="btn-ok" onclick="convertir('${a.row}')">OT</button>
+        <button class="btn-secondary" onclick="rechazar('${a.row}')">X</button>
       </div>
     `;
   });
 }
 
-// ================= RECHAZAR =================
+/* ================= ACCIONES ================= */
 async function rechazar(row) {
-
   await fetch(API + "?action=rechazarAviso&row=" + row);
   loadAvisos();
 }
 
-// ================= CONVERTIR A OT =================
 function convertir(row) {
-
-  // De momento solo redirige a OT
-  // (más adelante pasaremos datos del aviso)
   window.location.href = "ot.html?row=" + row;
 }
 
-// ================= IR OT DIRECTO =================
 function goOT() {
   window.location.href = "ot.html";
 }
