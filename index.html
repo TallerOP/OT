@@ -8,7 +8,6 @@
 
 <style>
 
-/* ================= FONDO RESPONSIVE REAL ================= */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -16,7 +15,6 @@ body {
   background-size: cover;
 }
 
-/* overlay oscuro */
 .overlay {
   background: rgba(0,0,0,0.65);
   min-height: 100vh;
@@ -24,7 +22,6 @@ body {
   box-sizing: border-box;
 }
 
-/* ================= CONTENEDORES ================= */
 #loginBox, #app {
   max-width: 420px;
   margin: auto;
@@ -35,17 +32,14 @@ body {
   box-shadow: 0 0 15px rgba(0,0,0,0.6);
 }
 
-/* ================= TITULOS ================= */
 h2, h3 {
   text-align: center;
 }
 
-/* ================= CAMPOS ================= */
 label {
   display:block;
   margin-top: 10px;
   font-weight: bold;
-  font-size: 14px;
 }
 
 input, select, textarea {
@@ -58,7 +52,6 @@ input, select, textarea {
   box-sizing: border-box;
 }
 
-/* ================= BOTONES ================= */
 button {
   width: 100%;
   padding: 14px;
@@ -71,11 +64,9 @@ button {
 }
 
 .btn-ok { background:#1e88e5; color:white; }
-.btn-ok:hover { background:#1565c0; }
-
 .btn-secondary { background:#444; color:white; }
+.btn-danger { background:#c62828; color:white; }
 
-/* ================= AVISOS ================= */
 .card {
   background: rgba(255,255,255,0.08);
   border-radius: 10px;
@@ -89,17 +80,8 @@ button {
   width: 48%;
 }
 
-/* ================= RESPONSIVE ================= */
 @media (max-width: 600px) {
-
-  #loginBox, #app {
-    width: 95%;
-    padding: 15px;
-  }
-
-  button {
-    font-size: 15px;
-  }
+  #loginBox, #app { width: 95%; }
 }
 
 </style>
@@ -141,8 +123,9 @@ button {
 
   <button class="btn-ok" onclick="crearAviso()">Generar Aviso</button>
 
-  <!-- 🔴 BOTÓN OT (solo técnicos) -->
   <button id="btnOT" class="btn-secondary" onclick="goOT()">Generar OT</button>
+
+  <button class="btn-danger" onclick="logout()">Cerrar sesión</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
@@ -178,13 +161,28 @@ async function login() {
   loginBox.style.display = "none";
   app.style.display = "block";
 
-  /* 🔴 CONTROL DE ROLES */
-  if (USER.toLowerCase() === "produccion") {
+  /* 🔐 CONTROL DE ROLES */
+  const isProduccion = USER.toLowerCase() === "produccion";
+
+  if (isProduccion) {
     document.getElementById("btnOT").style.display = "none";
   }
 
   loadLists();
   loadAvisos();
+}
+
+/* ================= LOGOUT ================= */
+function logout() {
+
+  USER = "";
+  EMISOR = "";
+
+  loginBox.style.display = "block";
+  app.style.display = "none";
+
+  user.value = "";
+  pass.value = "";
 }
 
 /* ================= LISTAS ================= */
@@ -242,6 +240,8 @@ async function loadAvisos() {
 
   avisos.innerHTML = "";
 
+  const isProduccion = USER.toLowerCase() === "produccion";
+
   (data || []).forEach(a => {
 
     avisos.innerHTML += `
@@ -249,8 +249,13 @@ async function loadAvisos() {
         <b>${a.maquina}</b><br>
         ${a.descripcion}<br>
 
-        <button class="btn-ok" onclick="convertir('${a.row}')">OT</button>
-        <button class="btn-secondary" onclick="rechazar('${a.row}')">X</button>
+        ${
+          !isProduccion
+          ? `<button class="btn-ok" onclick="convertir('${a.row}')">Convertir a OT</button>`
+          : ""
+        }
+
+        <button class="btn-secondary" onclick="rechazar('${a.row}')">Rechazar Aviso</button>
       </div>
     `;
   });
