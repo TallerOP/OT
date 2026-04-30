@@ -2,60 +2,30 @@
 <html lang="es">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orden de Trabajo</title>
+<title>OT</title>
 
 <style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#f2f2f2;
-}
-
-.container{
-max-width:500px;
-margin:auto;
-background:white;
-padding:15px;
-}
-
-label{
-font-weight:bold;
-display:block;
-margin-top:10px;
-}
+body{margin:0;font-family:Arial;background:#f2f2f2;}
+.box{max-width:500px;margin:auto;background:white;padding:15px;}
 
 input,select,textarea{
-width:100%;
-padding:10px;
-margin-top:5px;
-border:1px solid #ccc;
-border-radius:8px;
-box-sizing:border-box;
+width:100%;padding:10px;margin-top:5px;border:1px solid #ccc;border-radius:8px;
 }
 
-button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-font-weight:bold;
-}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;}
 
 .save{background:#2e7d32;color:white;}
 .back{background:#777;color:white;}
-
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="box">
 
-<button class="back" onclick="volver()">← Volver</button>
+<button class="back" onclick="back()">Volver</button>
 
-<h2>Orden de Trabajo</h2>
+<h2>OT</h2>
 
 <label>Hora</label>
 <select id="hora"></select>
@@ -66,20 +36,17 @@ font-weight:bold;
 <label>Proyecto</label>
 <input id="proy">
 
-<label>Tipo Avería</label>
+<label>Avería</label>
 <input id="tipo">
 
 <label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<label>Estado OT</label>
-<select id="estado">
-<option>ABIERTA</option>
-<option>CERRADA</option>
-</select>
+<label>Estado</label>
+<select id="estado"><option>ABIERTA</option><option>CERRADA</option></select>
 
-<label>Emisor OT</label>
-<input id="emisor" readonly>
+<label>Emisor</label>
+<input id="emisor">
 
 <label>Operario 1</label>
 <input id="op1">
@@ -87,19 +54,8 @@ font-weight:bold;
 <label>Tiempo 1</label>
 <input id="t1">
 
-<label>Descripción cerrar</label>
+<label>Cierre</label>
 <textarea id="cerrar"></textarea>
-
-<label>Planificar acción</label>
-<select id="plan" onchange="togglePlan()">
-<option>NO</option>
-<option>SI</option>
-</select>
-
-<div id="planBox" style="display:none">
-<label>Descripción planificación</label>
-<textarea id="planDesc"></textarea>
-</div>
 
 <button class="save" onclick="guardarOT()">Guardar OT</button>
 
@@ -107,55 +63,35 @@ font-weight:bold;
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
+const API="https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
 
-window.onload = async () => {
+window.onload=async()=>{
 
-/* EMISOR */
-emisor.value = localStorage.emisor || "";
-op1.value = localStorage.emisor || "";
+emisor.value=localStorage.emisor||"";
+op1.value=localStorage.emisor||"";
 
-/* LISTAS */
 const r = await fetch(`${API}?action=listas`);
 const d = await r.json();
 
-hora.innerHTML = d.HORA.map(h=>`<option>${h}</option>`).join("");
+hora.innerHTML = d.HORA.map(x=>`<option>${x}</option>`).join("");
 
-/* SI VIENE DE AVISO */
 const row = new URLSearchParams(location.search).get("row");
 
 if(row){
 const r2 = await fetch(`${API}?action=getAviso&row=${row}`);
 const a = await r2.json();
 
-maq.value = a.maquina || "";
-proy.value = a.proyecto || "";
-tipo.value = a.tipo || "";
-desc.value = a.descripcion || "";
-
-}else if(localStorage.tmp){
-
-const t = JSON.parse(localStorage.tmp);
-
-maq.value = t.maq;
-proy.value = t.proy;
-tipo.value = t.tipo;
-desc.value = t.desc;
+maq.value=a.maquina;
+proy.value=a.proyecto;
+tipo.value=a.tipo;
+desc.value=a.descripcion;
 }
 };
 
-/* PLAN */
-function togglePlan(){
-planBox.style.display = plan.value==="SI" ? "block" : "none";
-}
-
-/* GUARDAR */
+/* ================= GUARDAR OT (FIX REAL) ================= */
 async function guardarOT(){
 
-await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
+const payload = {
 action:"guardarOT",
 hora:hora.value,
 estado:estado.value,
@@ -165,19 +101,25 @@ proyecto:proy.value,
 tipo:tipo.value,
 descripcion:desc.value,
 cerrar:cerrar.value,
-plan:plan.value,
-planDesc:planDesc.value,
 op1:op1.value,
 t1:t1.value
-})
+};
+
+await fetch(API,{
+method:"POST",
+mode:"cors",
+redirect:"follow",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
 });
 
-alert("OT guardada correctamente");
+alert("OT guardada");
 }
 
-/* VOLVER */
-function volver(){
-window.location="index.html";
+function back(){
+location="index.html";
 }
 
 </script>

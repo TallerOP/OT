@@ -5,93 +5,26 @@
 <title>Gestión OT</title>
 
 <style>
+body{margin:0;font-family:Arial;background:url("op.png") center/cover fixed;}
+.overlay{background:rgba(255,255,255,0.94);min-height:100vh;padding:15px;}
+.container{max-width:500px;margin:auto;}
 
-body{
-margin:0;
-font-family:Arial;
-background:url("op.png") center/cover no-repeat fixed;
-}
+#loginBox{background:white;padding:20px;border-radius:12px;margin-top:40px;}
 
-.overlay{
-background:rgba(255,255,255,0.94);
-min-height:100vh;
-padding:15px;
-}
-
-.container{
-max-width:500px;
-margin:auto;
-}
-
-/* LOGIN */
-#loginBox{
-background:white;
-padding:20px;
-border-radius:12px;
-box-shadow:0 4px 15px rgba(0,0,0,0.2);
-margin-top:40px;
-}
-
-/* APP */
 #app{display:none;}
 
-/* HEADER */
-.header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
+input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;}
 
-/* BOTÓN PEQUEÑO */
-.logout{
-background:#d32f2f;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:6px;
-font-size:12px;
-width:auto;
-}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;}
 
-/* CAMPOS */
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
-}
+.aviso{background:#2e7d32;color:white;}
+.ot{background:#1976d2;color:white;}
+.del{background:#616161;color:white;}
 
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-top:5px;
-border-radius:8px;
-border:1px solid #ccc;
-box-sizing:border-box;
-}
+.logout{width:auto;font-size:12px;background:#d32f2f;color:white;padding:6px 10px;border-radius:6px;border:none;}
 
-/* BOTONES */
-button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-font-weight:bold;
-}
-
-.btn-aviso{background:#2e7d32;color:white;}
-.btn-ot{background:#1976d2;color:white;}
-.btn-del{background:#616161;color:white;}
-
-/* TARJETAS */
-.card{
-background:white;
-padding:12px;
-margin-top:10px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-
+.card{background:white;padding:10px;margin-top:10px;border-radius:10px;}
+.header{display:flex;justify-content:space-between;align-items:center;}
 </style>
 </head>
 
@@ -100,25 +33,18 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <div class="overlay">
 <div class="container">
 
-<!-- LOGIN -->
 <div id="loginBox">
 <h2>Login</h2>
-
-<label>Usuario</label>
-<input id="user">
-
-<label>Password</label>
-<input id="pass" type="password">
-
+<input id="user" placeholder="Usuario">
+<input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Entrar</button>
 </div>
 
-<!-- APP -->
 <div id="app">
 
 <div class="header">
-<h2>Gestión OT</h2>
-<button class="logout" onclick="logout()">Cerrar sesión</button>
+<h3>OT System</h3>
+<button class="logout" onclick="logout()">Salir</button>
 </div>
 
 <label>Máquina</label>
@@ -127,18 +53,17 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <label>Proyecto</label>
 <select id="proy"></select>
 
-<label>Tipo Avería</label>
+<label>Tipo avería</label>
 <select id="tipo"></select>
 
 <label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
-<button class="btn-ot" onclick="generarOT()">Generar OT</button>
+<button class="aviso" onclick="crearAviso()">Generar Aviso</button>
+<button class="ot" onclick="irOT()">Generar OT</button>
 
 <hr>
 
-<h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 
 </div>
@@ -148,45 +73,46 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
+const API="https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
 
-/* LOGIN */
+/* ================= LOGIN ================= */
 async function login(){
 
-const r = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
-const d = await r.json();
+const res = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
+const data = await res.json();
 
-if(!d.ok){
+if(!data.ok){
 alert("Login incorrecto");
 return;
 }
 
-localStorage.user = user.value;
-localStorage.emisor = d.emisor;
+localStorage.user=user.value;
+localStorage.emisor=data.emisor;
 
 loginBox.style.display="none";
 app.style.display="block";
 
-cargarListas();
-cargarAvisos();
+loadLists();
+loadAvisos();
 }
 
-/* LISTAS */
-async function cargarListas(){
-
-const r = await fetch(`${API}?action=listas`);
-const d = await r.json();
+/* ================= LISTAS ================= */
+async function loadLists(){
+const res = await fetch(`${API}?action=listas`);
+const d = await res.json();
 
 maq.innerHTML = d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
 proy.innerHTML = d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
 tipo.innerHTML = d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
-/* CREAR AVISO */
+/* ================= AVISO ================= */
 async function crearAviso(){
 
 await fetch(API,{
 method:"POST",
+mode:"cors",
+redirect:"follow",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 action:"crearAviso",
@@ -199,11 +125,11 @@ descripcion:desc.value
 });
 
 desc.value="";
-cargarAvisos();
+loadAvisos();
 }
 
-/* AVISOS */
-async function cargarAvisos(){
+/* ================= LOAD AVISOS ================= */
+async function loadAvisos(){
 
 const r = await fetch(`${API}?action=avisos`);
 const d = await r.json();
@@ -214,14 +140,14 @@ d.forEach(a=>{
 avisos.innerHTML+=`
 <div class="card">
 <b>${a.maquina}</b><br>${a.descripcion}
-<button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
-<button class="btn-del" onclick="rechazar(${a.row})">Eliminar aviso</button>
+<button class="ot" onclick="convertir(${a.row})">Convertir a OT</button>
+<button class="del" onclick="rechazar(${a.row})">Eliminar aviso</button>
 </div>`;
 });
 }
 
-/* ACCIONES */
-function generarOT(){
+/* ================= OT DIRECTO ================= */
+function irOT(){
 
 localStorage.tmp = JSON.stringify({
 maq:maq.value,
@@ -230,17 +156,30 @@ tipo:tipo.value,
 desc:desc.value
 });
 
-window.location="ot.html";
+location="ot.html";
 }
 
+/* ================= ACCIONES ================= */
 async function convertir(row){
-await fetch(`${API}?action=convertirAviso&row=${row}`);
-window.location=`ot.html?row=${row}`;
+
+await fetch(`${API}?action=convertirAviso&row=${row}`,{
+method:"GET",
+mode:"cors",
+redirect:"follow"
+});
+
+location="ot.html?row="+row;
 }
 
 async function rechazar(row){
-await fetch(`${API}?action=rechazarAviso&row=${row}&user=${localStorage.user}`);
-cargarAvisos();
+
+await fetch(`${API}?action=rechazarAviso&row=${row}&user=${localStorage.user}`,{
+method:"GET",
+mode:"cors",
+redirect:"follow"
+});
+
+loadAvisos();
 }
 
 function logout(){
