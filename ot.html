@@ -1,47 +1,59 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>OT</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orden de Trabajo</title>
 
 <style>
 
-body{margin:0;font-family:Arial;background:#f2f2f2;}
-#app{max-width:650px;margin:auto;background:white;padding:20px;}
+body{
+margin:0;
+font-family:Arial;
+background:#f2f2f2;
+}
 
-label{font-weight:bold;display:block;margin-top:10px;}
+.container{
+max-width:500px;
+margin:auto;
+background:white;
+padding:15px;
+}
+
+label{
+font-weight:bold;
+display:block;
+margin-top:10px;
+}
 
 input,select,textarea{
-width:100%;padding:10px;margin-top:5px;border:1px solid #ccc;border-radius:8px;
+width:100%;
+padding:10px;
+margin-top:5px;
+border:1px solid #ccc;
+border-radius:8px;
+box-sizing:border-box;
 }
 
 button{
-width:100%;padding:12px;margin-top:10px;border:none;border-radius:8px;font-weight:bold;
-}
-
-.btn-save{background:#2e7d32;color:white;}
-.btn-back{background:#777;color:white;}
-.btn-add{background:#1976d2;color:white;}
-
-.operario{
-border:1px solid #ddd;
-padding:10px;
+width:100%;
+padding:12px;
 margin-top:10px;
-border-radius:8px;
+border:none;
+border-radius:10px;
+font-weight:bold;
 }
 
-.hidden{display:none;}
+.save{background:#2e7d32;color:white;}
+.back{background:#777;color:white;}
 
 </style>
 </head>
 
 <body>
 
-<div id="app">
+<div class="container">
 
-<button class="btn-back" onclick="back()">← Volver</button>
+<button class="back" onclick="volver()">← Volver</button>
 
 <h2>Orden de Trabajo</h2>
 
@@ -54,7 +66,7 @@ border-radius:8px;
 <label>Proyecto</label>
 <input id="proy">
 
-<label>Tipo avería</label>
+<label>Tipo Avería</label>
 <input id="tipo">
 
 <label>Descripción</label>
@@ -69,18 +81,14 @@ border-radius:8px;
 <label>Emisor OT</label>
 <input id="emisor" readonly>
 
-<h3>Operarios</h3>
-
-<div id="ops">
-<div class="operario">
 <label>Operario 1</label>
 <input id="op1">
+
 <label>Tiempo 1</label>
 <input id="t1">
-</div>
-</div>
 
-<button class="btn-add" onclick="addOp()">+ Añadir operario</button>
+<label>Descripción cerrar</label>
+<textarea id="cerrar"></textarea>
 
 <label>Planificar acción</label>
 <select id="plan" onchange="togglePlan()">
@@ -88,78 +96,68 @@ border-radius:8px;
 <option>SI</option>
 </select>
 
-<div id="planBox" class="hidden">
+<div id="planBox" style="display:none">
 <label>Descripción planificación</label>
 <textarea id="planDesc"></textarea>
 </div>
 
-<label>Descripción cierre</label>
-<textarea id="cerrar"></textarea>
-
-<button class="btn-save" onclick="guardar()">Guardar OT</button>
+<button class="save" onclick="guardarOT()">Guardar OT</button>
 
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxMt05y_qJVVfis5ViCfMQCWjSecdAHdaaKJL88fZjF7bKhW-GEtszfmPj-9a8QBASL/exec";
+const API = "https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
 
-let opCount=1;
+window.onload = async () => {
 
-/* INIT */
-window.onload=async()=>{
+/* EMISOR */
+emisor.value = localStorage.emisor || "";
+op1.value = localStorage.emisor || "";
 
-emisor.value=localStorage.getItem("emisor")||"";
-op1.value=emisor.value;
+/* LISTAS */
+const r = await fetch(`${API}?action=listas`);
+const d = await r.json();
 
-/* cargar horas */
-const r=await fetch(API+"?action=listas");
-const d=await r.json();
+hora.innerHTML = d.HORA.map(h=>`<option>${h}</option>`).join("");
 
-hora.innerHTML=(d.HORA||[]).map(x=>`<option>${x}</option>`).join("");
+/* SI VIENE DE AVISO */
+const row = new URLSearchParams(location.search).get("row");
 
-/* cargar aviso si existe */
-const row=new URLSearchParams(location.search).get("row");
-if(row) loadAviso(row);
+if(row){
+const r2 = await fetch(`${API}?action=getAviso&row=${row}`);
+const a = await r2.json();
 
+maq.value = a.maquina || "";
+proy.value = a.proyecto || "";
+tipo.value = a.tipo || "";
+desc.value = a.descripcion || "";
+
+}else if(localStorage.tmp){
+
+const t = JSON.parse(localStorage.tmp);
+
+maq.value = t.maq;
+proy.value = t.proy;
+tipo.value = t.tipo;
+desc.value = t.desc;
 }
-
-/* AVISO */
-async function loadAviso(row){
-
-const r=await fetch(API+"?action=getAviso&row="+row);
-const d=await r.json();
-
-maq.value=d.maquina||"";
-proy.value=d.proyecto||"";
-tipo.value=d.tipo||"";
-desc.value=d.descripcion||"";
-}
-
-/* OPERARIOS */
-function addOp(){
-opCount++;
-const div=document.createElement("div");
-div.className="operario";
-div.innerHTML=`
-<label>Operario ${opCount}</label>
-<input id="op${opCount}">
-<label>Tiempo ${opCount}</label>
-<input id="t${opCount}">
-`;
-ops.appendChild(div);
-}
+};
 
 /* PLAN */
 function togglePlan(){
-planBox.classList.toggle("hidden", plan.value==="NO");
+planBox.style.display = plan.value==="SI" ? "block" : "none";
 }
 
 /* GUARDAR */
-async function guardar(){
+async function guardarOT(){
 
-let data={
+await fetch(API,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
 action:"guardarOT",
+hora:hora.value,
 estado:estado.value,
 emisor:emisor.value,
 maquina:maq.value,
@@ -169,26 +167,18 @@ descripcion:desc.value,
 cerrar:cerrar.value,
 plan:plan.value,
 planDesc:planDesc.value,
-hora:hora.value
-};
-
-for(let i=1;i<=opCount;i++){
-data["op"+i]=document.getElementById("op"+i)?.value||"";
-data["t"+i]=document.getElementById("t"+i)?.value||"";
-}
-
-await fetch(API,{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(data)
+op1:op1.value,
+t1:t1.value
+})
 });
 
 alert("OT guardada correctamente");
-
 }
 
-/* BACK */
-function back(){ window.location="index.html"; }
+/* VOLVER */
+function volver(){
+window.location="index.html";
+}
 
 </script>
 

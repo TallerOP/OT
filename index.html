@@ -1,42 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Sistema OT</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión OT</title>
 
 <style>
 
 body{
 margin:0;
 font-family:Arial;
-background:url("op.png") no-repeat center center fixed;
-background-size:cover;
+background:url("op.png") center/cover no-repeat fixed;
 }
 
 .overlay{
-min-height:100vh;
 background:rgba(255,255,255,0.94);
-padding:12px;
+min-height:100vh;
+padding:15px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
 }
 
 /* LOGIN */
 #loginBox{
-max-width:360px;
-margin:60px auto;
 background:white;
-padding:18px;
+padding:20px;
 border-radius:12px;
-box-shadow:0 4px 15px rgba(0,0,0,0.15);
+box-shadow:0 4px 15px rgba(0,0,0,0.2);
+margin-top:40px;
 }
 
 /* APP */
-#app{
-display:none;
-max-width:650px;
-margin:auto;
-}
+#app{display:none;}
 
 /* HEADER */
 .header{
@@ -45,9 +42,9 @@ justify-content:space-between;
 align-items:center;
 }
 
-/* BOTON PEQUEÑO */
+/* BOTÓN PEQUEÑO */
 .logout{
-background:#c62828;
+background:#d32f2f;
 color:white;
 border:none;
 padding:6px 10px;
@@ -56,20 +53,20 @@ font-size:12px;
 width:auto;
 }
 
-/* LABELS */
+/* CAMPOS */
 label{
 display:block;
 margin-top:10px;
 font-weight:bold;
 }
 
-/* INPUTS */
 input,select,textarea{
 width:100%;
 padding:10px;
 margin-top:5px;
 border-radius:8px;
 border:1px solid #ccc;
+box-sizing:border-box;
 }
 
 /* BOTONES */
@@ -86,6 +83,7 @@ font-weight:bold;
 .btn-ot{background:#1976d2;color:white;}
 .btn-del{background:#616161;color:white;}
 
+/* TARJETAS */
 .card{
 background:white;
 padding:12px;
@@ -100,6 +98,7 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <body>
 
 <div class="overlay">
+<div class="container">
 
 <!-- LOGIN -->
 <div id="loginBox">
@@ -118,11 +117,9 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <div id="app">
 
 <div class="header">
-<h2>Sistema OT</h2>
-<button class="logout" onclick="logout()">Salir</button>
+<h2>Gestión OT</h2>
+<button class="logout" onclick="logout()">Cerrar sesión</button>
 </div>
-
-<h3>Generar Aviso</h3>
 
 <label>Máquina</label>
 <select id="maq"></select>
@@ -130,14 +127,14 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 <label>Proyecto</label>
 <select id="proy"></select>
 
-<label>Tipo avería</label>
+<label>Tipo Avería</label>
 <select id="tipo"></select>
 
 <label>Descripción</label>
 <textarea id="desc"></textarea>
 
 <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
-<button class="btn-ot" onclick="goOT()">Generar OT</button>
+<button class="btn-ot" onclick="generarOT()">Generar OT</button>
 
 <hr>
 
@@ -147,45 +144,45 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 </div>
 
 </div>
+</div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxMt05y_qJVVfis5ViCfMQCWjSecdAHdaaKJL88fZjF7bKhW-GEtszfmPj-9a8QBASL/exec";
+const API = "https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
 
 /* LOGIN */
 async function login(){
 
-const r=await fetch(API+"?action=login&user="+user.value+"&pass="+pass.value);
-const d=await r.json();
+const r = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
+const d = await r.json();
 
 if(!d.ok){
 alert("Login incorrecto");
 return;
 }
 
-/* 🔥 GUARDAMOS SESIÓN */
-localStorage.setItem("user",user.value);
-localStorage.setItem("emisor",d.emisor);
+localStorage.user = user.value;
+localStorage.emisor = d.emisor;
 
 loginBox.style.display="none";
 app.style.display="block";
 
-loadLists();
-loadAvisos();
+cargarListas();
+cargarAvisos();
 }
 
 /* LISTAS */
-async function loadLists(){
+async function cargarListas(){
 
-const r=await fetch(API+"?action=listas");
-const d=await r.json();
+const r = await fetch(`${API}?action=listas`);
+const d = await r.json();
 
-maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
-proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
-tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
+maq.innerHTML = d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
+proy.innerHTML = d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
+tipo.innerHTML = d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
-/* AVISO */
+/* CREAR AVISO */
 async function crearAviso(){
 
 await fetch(API,{
@@ -193,7 +190,7 @@ method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 action:"crearAviso",
-usuario:localStorage.getItem("user"),
+usuario:localStorage.user,
 maquina:maq.value,
 proyecto:proy.value,
 tipo:tipo.value,
@@ -202,39 +199,48 @@ descripcion:desc.value
 });
 
 desc.value="";
-loadAvisos();
+cargarAvisos();
 }
 
 /* AVISOS */
-async function loadAvisos(){
+async function cargarAvisos(){
 
-const r=await fetch(API+"?action=avisos");
-const d=await r.json();
+const r = await fetch(`${API}?action=avisos`);
+const d = await r.json();
 
 avisos.innerHTML="";
 
 d.forEach(a=>{
 avisos.innerHTML+=`
 <div class="card">
-<b>${a.maquina}</b><br>
-${a.descripcion}<br>
+<b>${a.maquina}</b><br>${a.descripcion}
 <button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
-<button class="btn-del" onclick="eliminar(${a.row})">Eliminar aviso</button>
+<button class="btn-del" onclick="rechazar(${a.row})">Eliminar aviso</button>
 </div>`;
 });
 }
 
 /* ACCIONES */
-function goOT(){ window.location="ot.html"; }
+function generarOT(){
 
-async function convertir(row){
-await fetch(API+"?action=convertirAviso&row="+row);
-window.location="ot.html?row="+row;
+localStorage.tmp = JSON.stringify({
+maq:maq.value,
+proy:proy.value,
+tipo:tipo.value,
+desc:desc.value
+});
+
+window.location="ot.html";
 }
 
-async function eliminar(row){
-await fetch(API+"?action=rechazarAviso&row="+row+"&user="+localStorage.getItem("user"));
-loadAvisos();
+async function convertir(row){
+await fetch(`${API}?action=convertirAviso&row=${row}`);
+window.location=`ot.html?row=${row}`;
+}
+
+async function rechazar(row){
+await fetch(`${API}?action=rechazarAviso&row=${row}&user=${localStorage.user}`);
+cargarAvisos();
 }
 
 function logout(){
