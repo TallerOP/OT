@@ -19,7 +19,6 @@ background-size:cover;
 min-height:100vh;
 background:rgba(255,255,255,0.94);
 padding:12px;
-box-sizing:border-box;
 }
 
 /* LOGIN */
@@ -46,27 +45,34 @@ justify-content:space-between;
 align-items:center;
 }
 
+/* BOTON PEQUEÑO */
+.logout{
+background:#c62828;
+color:white;
+border:none;
+padding:6px 10px;
+border-radius:6px;
+font-size:12px;
+width:auto;
+}
+
 /* LABELS */
 label{
 display:block;
 margin-top:10px;
 font-weight:bold;
-font-size:14px;
-color:#333;
 }
 
 /* INPUTS */
 input,select,textarea{
 width:100%;
-padding:12px;
+padding:10px;
 margin-top:5px;
 border-radius:8px;
 border:1px solid #ccc;
-box-sizing:border-box;
-font-size:15px;
 }
 
-/* BUTTONS */
+/* BOTONES */
 button{
 width:100%;
 padding:12px;
@@ -74,7 +80,6 @@ margin-top:10px;
 border:none;
 border-radius:10px;
 font-weight:bold;
-cursor:pointer;
 }
 
 .btn-aviso{background:#2e7d32;color:white;}
@@ -87,13 +92,6 @@ padding:12px;
 margin-top:10px;
 border-radius:10px;
 box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-
-.logout{
-background:#c62828;color:white;
-border:none;
-padding:8px 12px;
-border-radius:8px;
 }
 
 </style>
@@ -132,15 +130,14 @@ border-radius:8px;
 <label>Proyecto</label>
 <select id="proy"></select>
 
-<label>Tipo de avería</label>
+<label>Tipo avería</label>
 <select id="tipo"></select>
 
 <label>Descripción</label>
 <textarea id="desc"></textarea>
 
 <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
-
-<button id="btnOT" class="btn-ot" onclick="goOT()">Generar OT</button>
+<button class="btn-ot" onclick="goOT()">Generar OT</button>
 
 <hr>
 
@@ -155,10 +152,7 @@ border-radius:8px;
 
 const API="https://script.google.com/macros/s/AKfycbxMt05y_qJVVfis5ViCfMQCWjSecdAHdaaKJL88fZjF7bKhW-GEtszfmPj-9a8QBASL/exec";
 
-let USER="";
-let EMISOR="";
-let ROL="";
-
+/* LOGIN */
 async function login(){
 
 const r=await fetch(API+"?action=login&user="+user.value+"&pass="+pass.value);
@@ -169,21 +163,18 @@ alert("Login incorrecto");
 return;
 }
 
-USER=user.value;
-EMISOR=d.emisor;
-ROL=user.value.toLowerCase();
+/* 🔥 GUARDAMOS SESIÓN */
+localStorage.setItem("user",user.value);
+localStorage.setItem("emisor",d.emisor);
 
 loginBox.style.display="none";
 app.style.display="block";
-
-if(ROL==="produccion"){
-btnOT.style.display="none";
-}
 
 loadLists();
 loadAvisos();
 }
 
+/* LISTAS */
 async function loadLists(){
 
 const r=await fetch(API+"?action=listas");
@@ -194,13 +185,15 @@ proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
 tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
+/* AVISO */
 async function crearAviso(){
 
 await fetch(API,{
 method:"POST",
+headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
 action:"crearAviso",
-usuario:USER,
+usuario:localStorage.getItem("user"),
 maquina:maq.value,
 proyecto:proy.value,
 tipo:tipo.value,
@@ -212,6 +205,7 @@ desc.value="";
 loadAvisos();
 }
 
+/* AVISOS */
 async function loadAvisos(){
 
 const r=await fetch(API+"?action=avisos");
@@ -220,21 +214,18 @@ const d=await r.json();
 avisos.innerHTML="";
 
 d.forEach(a=>{
-
 avisos.innerHTML+=`
 <div class="card">
 <b>${a.maquina}</b><br>
 ${a.descripcion}<br>
-
 <button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
 <button class="btn-del" onclick="eliminar(${a.row})">Eliminar aviso</button>
 </div>`;
 });
 }
 
-function goOT(){
-window.location="ot.html";
-}
+/* ACCIONES */
+function goOT(){ window.location="ot.html"; }
 
 async function convertir(row){
 await fetch(API+"?action=convertirAviso&row="+row);
@@ -242,11 +233,12 @@ window.location="ot.html?row="+row;
 }
 
 async function eliminar(row){
-await fetch(API+"?action=rechazarAviso&row="+row+"&user="+USER);
+await fetch(API+"?action=rechazarAviso&row="+row+"&user="+localStorage.getItem("user"));
 loadAvisos();
 }
 
 function logout(){
+localStorage.clear();
 location.reload();
 }
 
