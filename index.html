@@ -17,19 +17,19 @@ background-size:cover;
 
 .overlay{
 min-height:100vh;
-background:rgba(255,255,255,0.92);
-padding:15px;
+background:rgba(255,255,255,0.94);
+padding:12px;
 box-sizing:border-box;
 }
 
 /* LOGIN */
 #loginBox{
-max-width:400px;
-margin:80px auto;
+max-width:360px;
+margin:60px auto;
 background:white;
-padding:20px;
+padding:18px;
 border-radius:12px;
-box-shadow:0 4px 15px rgba(0,0,0,0.1);
+box-shadow:0 4px 15px rgba(0,0,0,0.15);
 }
 
 /* APP */
@@ -46,21 +46,31 @@ justify-content:space-between;
 align-items:center;
 }
 
+/* LABELS */
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+font-size:14px;
+color:#333;
+}
+
 /* INPUTS */
 input,select,textarea{
 width:100%;
 padding:12px;
-margin-top:6px;
+margin-top:5px;
 border-radius:8px;
 border:1px solid #ccc;
 box-sizing:border-box;
+font-size:15px;
 }
 
 /* BUTTONS */
 button{
 width:100%;
 padding:12px;
-margin-top:8px;
+margin-top:10px;
 border:none;
 border-radius:10px;
 font-weight:bold;
@@ -70,7 +80,6 @@ cursor:pointer;
 .btn-aviso{background:#2e7d32;color:white;}
 .btn-ot{background:#1976d2;color:white;}
 .btn-del{background:#616161;color:white;}
-.logout{background:#c62828;color:white;}
 
 .card{
 background:white;
@@ -80,7 +89,12 @@ border-radius:10px;
 box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 
-.hidden{display:none;}
+.logout{
+background:#c62828;color:white;
+border:none;
+padding:8px 12px;
+border-radius:8px;
+}
 
 </style>
 </head>
@@ -89,12 +103,15 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 
 <div class="overlay">
 
-<!-- LOGIN RESTAURADO -->
+<!-- LOGIN -->
 <div id="loginBox">
 <h2>Login</h2>
 
-<input id="user" placeholder="Usuario">
-<input id="pass" type="password" placeholder="Password">
+<label>Usuario</label>
+<input id="user">
+
+<label>Password</label>
+<input id="pass" type="password">
 
 <button onclick="login()">Entrar</button>
 </div>
@@ -104,15 +121,21 @@ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 
 <div class="header">
 <h2>Sistema OT</h2>
-<button class="logout" onclick="logout()">Cerrar sesión</button>
+<button class="logout" onclick="logout()">Salir</button>
 </div>
 
 <h3>Generar Aviso</h3>
 
+<label>Máquina</label>
 <select id="maq"></select>
+
+<label>Proyecto</label>
 <select id="proy"></select>
+
+<label>Tipo de avería</label>
 <select id="tipo"></select>
 
+<label>Descripción</label>
 <textarea id="desc"></textarea>
 
 <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
@@ -136,7 +159,6 @@ let USER="";
 let EMISOR="";
 let ROL="";
 
-/* ================= LOGIN REAL ================= */
 async function login(){
 
 const r=await fetch(API+"?action=login&user="+user.value+"&pass="+pass.value);
@@ -154,16 +176,14 @@ ROL=user.value.toLowerCase();
 loginBox.style.display="none";
 app.style.display="block";
 
-/* PRODUCCIÓN SIN OT */
 if(ROL==="produccion"){
-document.getElementById("btnOT").style.display="none";
+btnOT.style.display="none";
 }
 
 loadLists();
 loadAvisos();
 }
 
-/* LISTAS */
 async function loadLists(){
 
 const r=await fetch(API+"?action=listas");
@@ -174,7 +194,6 @@ proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
 tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
-/* AVISO */
 async function crearAviso(){
 
 await fetch(API,{
@@ -193,7 +212,6 @@ desc.value="";
 loadAvisos();
 }
 
-/* AVISOS */
 async function loadAvisos(){
 
 const r=await fetch(API+"?action=avisos");
@@ -210,35 +228,24 @@ ${a.descripcion}<br>
 
 <button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
 <button class="btn-del" onclick="eliminar(${a.row})">Eliminar aviso</button>
-</div>
-`;
-
+</div>`;
 });
-
 }
 
-/* OT */
 function goOT(){
 window.location="ot.html";
 }
 
-/* CONVERTIR */
 async function convertir(row){
-
 await fetch(API+"?action=convertirAviso&row="+row);
-
 window.location="ot.html?row="+row;
 }
 
-/* ELIMINAR */
 async function eliminar(row){
-
 await fetch(API+"?action=rechazarAviso&row="+row+"&user="+USER);
-
 loadAvisos();
 }
 
-/* LOGOUT */
 function logout(){
 location.reload();
 }

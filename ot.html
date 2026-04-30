@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>OT</title>
+<title>Orden de Trabajo</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -19,41 +19,57 @@ max-width:650px;
 margin:auto;
 background:white;
 padding:20px;
-}
-
-label{
-font-weight:bold;
-display:block;
-margin-top:10px;
-}
-
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-top:5px;
 box-sizing:border-box;
 }
 
+/* TITULOS */
+h2,h3{
+margin-top:10px;
+}
+
+/* LABELS */
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+font-size:14px;
+}
+
+/* INPUTS */
+input,select,textarea{
+width:100%;
+padding:12px;
+margin-top:5px;
+border:1px solid #ccc;
+border-radius:8px;
+box-sizing:border-box;
+font-size:15px;
+}
+
+/* BOTONES */
 button{
 width:100%;
 padding:12px;
 margin-top:10px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 font-weight:bold;
+cursor:pointer;
 }
 
 .btn-save{background:#2e7d32;color:white;}
 .btn-back{background:#777;color:white;}
-.btn-add{background:#1976d2;color:white;}
+.btn-add{background:#1976d2;color:white;color:white;}
 
 .operario{
 border:1px solid #ddd;
 padding:10px;
 margin-top:10px;
 border-radius:8px;
+background:#fafafa;
 }
 
+/* PLANIFICACIÓN */
 .hidden{display:none;}
 
 </style>
@@ -67,31 +83,36 @@ border-radius:8px;
 
 <h2>Orden de Trabajo</h2>
 
+<!-- DATOS PRINCIPALES -->
 <label>Máquina</label>
 <input id="maq">
 
 <label>Proyecto</label>
 <input id="proy">
 
-<label>Tipo Avería</label>
+<label>Tipo de avería</label>
 <input id="tipo">
 
 <label>Descripción</label>
 <textarea id="desc"></textarea>
 
+<!-- ESTADO -->
 <label>Estado OT</label>
 <select id="estado">
 <option>ABIERTA</option>
 <option>CERRADA</option>
 </select>
 
+<!-- EMISOR -->
 <label>Emisor OT</label>
 <input id="emisor" readonly>
 
-<!-- OPERARIOS -->
+<hr>
+
 <h3>Operarios</h3>
 
 <div id="ops">
+
 <div class="operario">
 <label>Operario 1</label>
 <input id="op1">
@@ -99,22 +120,28 @@ border-radius:8px;
 <label>Tiempo 1</label>
 <input id="t1">
 </div>
+
 </div>
 
 <button class="btn-add" onclick="addOp()">+ Añadir operario</button>
 
+<hr>
+
 <!-- PLANIFICACIÓN -->
 <label>Planificar acción</label>
 <select id="plan" onchange="togglePlan()">
-<option>NO</option>
-<option>SI</option>
+<option value="NO">NO</option>
+<option value="SI">SI</option>
 </select>
 
 <div id="planBox" class="hidden">
+
 <label>Descripción planificación</label>
 <textarea id="planDesc"></textarea>
+
 </div>
 
+<!-- CIERRE -->
 <label>Descripción cierre</label>
 <textarea id="cerrar"></textarea>
 
@@ -129,7 +156,7 @@ const API="TU_URL_AQUI";
 let EMISOR="";
 let opCount=1;
 
-/* INIT */
+/* ================= INIT ================= */
 window.onload=async()=>{
 
 const r=await fetch(API+"?action=session");
@@ -140,11 +167,13 @@ EMISOR=d.emisor;
 emisor.value=EMISOR;
 op1.value=EMISOR;
 
+/* si viene desde aviso */
 const row=new URLSearchParams(location.search).get("row");
+
 if(row) loadAviso(row);
 }
 
-/* AVISO */
+/* ================= CARGAR AVISO ================= */
 async function loadAviso(row){
 
 const r=await fetch(API+"?action=getAviso&row="+row);
@@ -156,7 +185,7 @@ tipo.value=d.tipo||"";
 desc.value=d.descripcion||"";
 }
 
-/* ADD OPERARIO */
+/* ================= AÑADIR OPERARIO ================= */
 function addOp(){
 
 opCount++;
@@ -167,6 +196,7 @@ div.className="operario";
 div.innerHTML=`
 <label>Operario ${opCount}</label>
 <input id="op${opCount}">
+
 <label>Tiempo ${opCount}</label>
 <input id="t${opCount}">
 `;
@@ -174,13 +204,18 @@ div.innerHTML=`
 ops.appendChild(div);
 }
 
-/* PLANIFICACIÓN */
+/* ================= PLANIFICACIÓN ================= */
 function togglePlan(){
 
-planBox.classList.toggle("hidden", plan.value==="NO");
+if(plan.value==="SI"){
+planBox.classList.remove("hidden");
+}else{
+planBox.classList.add("hidden");
 }
 
-/* GUARDAR */
+}
+
+/* ================= GUARDAR OT ================= */
 async function guardar(){
 
 let data={
@@ -196,20 +231,26 @@ planDesc:planDesc.value,
 cerrar:cerrar.value
 };
 
+/* operarios dinámicos */
 for(let i=1;i<=opCount;i++){
 data["op"+i]=document.getElementById("op"+i)?.value||"";
 data["t"+i]=document.getElementById("t"+i)?.value||"";
 }
 
+/* POST CORRECTO */
 await fetch(API,{
 method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify(data)
 });
 
-alert("OT guardada");
+alert("OT guardada correctamente");
+
 }
 
-/* BACK */
+/* ================= BACK ================= */
 function back(){
 window.location="index.html";
 }
