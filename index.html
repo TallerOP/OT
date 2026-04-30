@@ -8,7 +8,6 @@
 
 <style>
 
-/* ================= FONDO RESTAURADO ================= */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -16,7 +15,6 @@ body {
   background-size: cover;
 }
 
-/* capa blanca semitransparente para legibilidad */
 .overlay {
   min-height: 100vh;
   background: rgba(255,255,255,0.92);
@@ -24,18 +22,23 @@ body {
   box-sizing: border-box;
 }
 
-/* ================= LOGOUT (SOLO APP) ================= */
+/* ================= LOGOUT FIX REAL ================= */
 #logoutBtn {
   position: fixed;
   top: 10px;
   right: 10px;
-  z-index: 999;
-  padding: 10px 14px;
+  z-index: 9999;
+
+  width: auto !important;
+  padding: 8px 12px;
+
   border: none;
   border-radius: 8px;
   background: #c62828;
   color: white;
   font-weight: bold;
+  font-size: 13px;
+
   cursor: pointer;
   display: none;
 }
@@ -51,9 +54,7 @@ body {
 }
 
 /* ================= TITULOS ================= */
-h2, h3 {
-  text-align: center;
-}
+h2, h3 { text-align:center; }
 
 /* ================= CAMPOS ================= */
 label {
@@ -98,14 +99,6 @@ button {
 
 .card button {
   width: 48%;
-  font-size: 14px;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 600px) {
-  #loginBox, #app {
-    margin: 20px 10px;
-  }
 }
 
 </style>
@@ -113,7 +106,7 @@ button {
 
 <body>
 
-<!-- 🔴 LOGOUT FIJO (SOLO APP) -->
+<!-- 🔴 LOGOUT FIX -->
 <button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
 
 <div class="overlay">
@@ -186,7 +179,7 @@ async function login() {
   loginBox.style.display = "none";
   app.style.display = "block";
 
-  /* activar logout SOLO en app */
+  /* mostrar logout */
   document.getElementById("logoutBtn").style.display = "block";
 
   /* roles */
@@ -213,9 +206,9 @@ function logout() {
   pass.value = "";
 }
 
-/* ================= LISTAS ================= */
-async function loadLists() {
+/* ================= RESTO SIN CAMBIOS ================= */
 
+async function loadLists() {
   const res = await fetch(API + "?action=listas");
   const data = await res.json();
 
@@ -225,10 +218,8 @@ async function loadLists() {
 }
 
 function fill(id, arr) {
-
   const sel = document.getElementById(id);
   sel.innerHTML = "";
-
   (arr || []).forEach(v => {
     const o = document.createElement("option");
     o.value = v;
@@ -237,7 +228,6 @@ function fill(id, arr) {
   });
 }
 
-/* ================= AVISO ================= */
 async function crearAviso() {
 
   const url = new URL(API);
@@ -260,7 +250,6 @@ async function crearAviso() {
   }
 }
 
-/* ================= AVISOS ================= */
 async function loadAvisos() {
 
   const res = await fetch(API + "?action=avisos");
@@ -289,7 +278,6 @@ async function loadAvisos() {
   });
 }
 
-/* ================= ACCIONES ================= */
 async function rechazar(row) {
   await fetch(API + "?action=rechazarAviso&row=" + row);
   loadAvisos();
