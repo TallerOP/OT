@@ -8,15 +8,23 @@
 
 <style>
 
-/* ================= BASE CLARA ================= */
+/* ================= FONDO RESTAURADO ================= */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  color: #111;
+  background: url("op.png") no-repeat center center fixed;
+  background-size: cover;
 }
 
-/* ================= LOGOUT FIJO ================= */
+/* capa blanca semitransparente para legibilidad */
+.overlay {
+  min-height: 100vh;
+  background: rgba(255,255,255,0.92);
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+/* ================= LOGOUT (SOLO APP) ================= */
 #logoutBtn {
   position: fixed;
   top: 10px;
@@ -29,6 +37,7 @@ body {
   color: white;
   font-weight: bold;
   cursor: pointer;
+  display: none;
 }
 
 /* ================= CONTENEDORES ================= */
@@ -44,7 +53,6 @@ body {
 /* ================= TITULOS ================= */
 h2, h3 {
   text-align: center;
-  margin-top: 10px;
 }
 
 /* ================= CAMPOS ================= */
@@ -52,7 +60,6 @@ label {
   display:block;
   margin-top: 12px;
   font-weight: bold;
-  font-size: 14px;
 }
 
 input, select, textarea {
@@ -78,8 +85,6 @@ button {
 }
 
 .btn-ok { background:#1976d2; color:white; }
-.btn-ok:hover { background:#125aa0; }
-
 .btn-secondary { background:#555; color:white; }
 
 /* ================= AVISOS ================= */
@@ -93,18 +98,13 @@ button {
 
 .card button {
   width: 48%;
+  font-size: 14px;
 }
 
 /* ================= RESPONSIVE ================= */
 @media (max-width: 600px) {
-
   #loginBox, #app {
     margin: 20px 10px;
-    padding: 15px;
-  }
-
-  button {
-    font-size: 15px;
   }
 }
 
@@ -113,8 +113,10 @@ button {
 
 <body>
 
-<!-- 🔴 LOGOUT FIJO -->
+<!-- 🔴 LOGOUT FIJO (SOLO APP) -->
 <button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
+
+<div class="overlay">
 
 <!-- LOGIN -->
 <div id="loginBox">
@@ -155,6 +157,8 @@ button {
 
 </div>
 
+</div>
+
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
@@ -182,7 +186,10 @@ async function login() {
   loginBox.style.display = "none";
   app.style.display = "block";
 
-  /* ROLES */
+  /* activar logout SOLO en app */
+  document.getElementById("logoutBtn").style.display = "block";
+
+  /* roles */
   if (USER.toLowerCase() === "produccion") {
     document.getElementById("btnOT").style.display = "none";
   }
@@ -199,6 +206,8 @@ function logout() {
 
   loginBox.style.display = "block";
   app.style.display = "none";
+
+  document.getElementById("logoutBtn").style.display = "none";
 
   user.value = "";
   pass.value = "";
@@ -270,11 +279,11 @@ async function loadAvisos() {
 
         ${
           !isProd
-          ? `<button class="btn-ok" onclick="convertir('${a.row}')">OT</button>`
+          ? `<button class="btn-ok" onclick="convertir('${a.row}')">Convertir a OT</button>`
           : ""
         }
 
-        <button class="btn-secondary" onclick="rechazar('${a.row}')">X</button>
+        <button class="btn-secondary" onclick="rechazar('${a.row}')">Rechazar Aviso</button>
       </div>
     `;
   });
