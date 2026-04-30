@@ -8,6 +8,7 @@
     body { font-family: Arial; padding: 20px; }
     #app { display:none; }
     .card { border:1px solid #ccc; padding:10px; margin:10px 0; }
+    button { margin-right: 10px; }
   </style>
 </head>
 
@@ -26,7 +27,7 @@
 <!-- APP -->
 <div id="app">
 
-  <h2>Generar Aviso</h2>
+  <h2>Generar Aviso / OT</h2>
 
   <select id="maq"></select>
   <select id="proy"></select>
@@ -36,7 +37,9 @@
 
   <textarea id="desc" placeholder="Descripción"></textarea><br><br>
 
+  <!-- BOTONES -->
   <button onclick="crearAviso()">Generar Aviso</button>
+  <button onclick="goOT()">Generar OT</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
@@ -50,42 +53,28 @@ const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrp
 let USER = "";
 let EMISOR = "";
 
-// ================= LOGIN (FIXED) =================
+// ================= LOGIN =================
 async function login() {
 
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
+  const u = user.value;
+  const p = pass.value;
 
-  if (!u || !p) {
-    alert("Completa usuario y contraseña");
+  const res = await fetch(`${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
+  const data = await res.json();
+
+  if (!data.ok) {
+    alert("Login incorrecto");
     return;
   }
 
-  try {
+  USER = u;
+  EMISOR = data.emisor;
 
-    const url = `${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
+  loginBox.style.display = "none";
+  app.style.display = "block";
 
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (!data || !data.ok) {
-      alert("Login incorrecto");
-      return;
-    }
-
-    USER = u;
-    EMISOR = data.emisor || "";
-
-    loginBox.style.display = "none";
-    app.style.display = "block";
-
-    loadLists();
-    loadAvisos();
-
-  } catch (err) {
-    console.error(err);
-    alert("Error de conexión con el servidor");
-  }
+  loadLists();
+  loadAvisos();
 }
 
 // ================= LISTAS =================
@@ -112,7 +101,7 @@ function fill(id, arr) {
   });
 }
 
-// ================= CREAR AVISO =================
+// ================= AVISO =================
 async function crearAviso() {
 
   const url = new URL(API);
@@ -125,24 +114,13 @@ async function crearAviso() {
   url.searchParams.append("tipo", tipo.value);
   url.searchParams.append("descripcion", desc.value);
 
-  try {
+  const res = await fetch(url);
+  const data = await res.json();
 
-    const res = await fetch(url.toString());
-    const data = await res.json();
-
-    if (!data.ok) {
-      alert("Error creando aviso");
-      return;
-    }
-
+  if (data.ok) {
     alert("Aviso creado correctamente");
-
     desc.value = "";
     loadAvisos();
-
-  } catch (err) {
-    console.error(err);
-    alert("Error de conexión");
   }
 }
 
@@ -159,28 +137,15 @@ async function loadAvisos() {
     avisos.innerHTML += `
       <div class="card">
         <b>${a.maquina}</b><br>
-        ${a.descripcion}<br><br>
-
-        <button onclick="rechazar('${a.row}')">Rechazar</button>
-        <button onclick="convertir('${a.row}')">Convertir OT</button>
+        ${a.descripcion}
       </div>
     `;
   });
 }
 
-// ================= RECHAZAR =================
-async function rechazar(row) {
-  await fetch(API + "?action=rechazarAviso&row=" + row);
-  loadAvisos();
-}
-
-// ================= CONVERTIR OT =================
-async function convertir(row) {
-
-  await fetch(API + "?action=crearOT&row=" + row + "&emisor=" + EMISOR);
-
-  alert("OT creada");
-  loadAvisos();
+// ================= 🔴 NUEVO BOTÓN OT =================
+function goOT() {
+  window.location.href = "ot.html";
 }
 
 </script>
