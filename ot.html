@@ -38,7 +38,6 @@ body {
   cursor: pointer;
 }
 
-/* ================= CONTENEDOR ================= */
 #app {
   max-width: 520px;
   margin: 60px auto;
@@ -81,15 +80,6 @@ button {
 .btn-green { background:#2e7d32; color:white; }
 .btn-gray { background:#555; color:white; }
 
-.row {
-  display: flex;
-  gap: 10px;
-}
-
-.row > div {
-  flex: 1;
-}
-
 .hidden { display:none; }
 
 </style>
@@ -105,7 +95,10 @@ button {
 
   <h2>Orden de Trabajo</h2>
 
-  <!-- AVISO (EDITABLE) -->
+  <!-- BOTÓN VOLVER -->
+  <button class="btn-gray" onclick="back()">← Volver</button>
+
+  <!-- AVISO / OT -->
   <label>Máquina</label>
   <input id="maq">
 
@@ -127,7 +120,7 @@ button {
     <option>CERRADA</option>
   </select>
 
-  <!-- EMISOR OT -->
+  <!-- EMISOR -->
   <label>Emisor OT</label>
   <input id="emisor" readonly>
 
@@ -150,10 +143,6 @@ button {
   <label>Tiempo Int</label>
   <input id="tint">
 
-  <!-- CIERRE -->
-  <label>Descripción Cierre</label>
-  <textarea id="cerrar"></textarea>
-
   <!-- PLANIFICACIÓN -->
   <label>Planificar Acción</label>
   <select id="plan" onchange="togglePlan()">
@@ -166,6 +155,11 @@ button {
     <textarea id="planDesc"></textarea>
   </div>
 
+  <!-- DESCRIPCIÓN CIERRE (MOVIDA AQUÍ) -->
+  <label>Descripción Cierre</label>
+  <textarea id="cerrar"></textarea>
+
+  <!-- GUARDAR -->
   <button class="btn-green" onclick="guardar()">Guardar OT</button>
 
 </div>
@@ -189,8 +183,12 @@ window.onload = async () => {
   await loadSession();
 
   emisor.value = EMISOR;
+  op1.value = EMISOR;
 
-  if (row) loadAviso(row);
+  if (row) {
+    loadAviso(row);
+  }
+  // si no hay row → OT manual vacía (CORRECTO)
 }
 
 /* ================= SESSION ================= */
@@ -209,12 +207,10 @@ async function loadAviso(row) {
   const res = await fetch(API + "?action=getAviso&row=" + row);
   const a = await res.json();
 
-  maq.value = a.maquina;
-  proy.value = a.proyecto;
-  tipo.value = a.tipo;
-  desc.value = a.descripcion;
-
-  op1.value = EMISOR;
+  maq.value = a.maquina || "";
+  proy.value = a.proyecto || "";
+  tipo.value = a.tipo || "";
+  desc.value = a.descripcion || "";
 }
 
 /* ================= OPERARIOS ================= */
@@ -254,7 +250,7 @@ async function guardar() {
     emisor: emisor.value,
     op1: op1.value,
     t1: t1.value,
-    op2: op2.value || "",
+    op2: op2?.value || "",
     t2: t2?.value || "",
     op3: op3?.value || "",
     t3: t3?.value || "",
@@ -276,7 +272,11 @@ async function guardar() {
   alert("OT guardada correctamente");
 }
 
-/* ================= LOGOUT ================= */
+/* ================= NAV ================= */
+function back() {
+  window.location.href = "index.html";
+}
+
 function logout() {
   window.location.href = "index.html";
 }
