@@ -8,38 +8,51 @@
 
 <style>
 
+/* ================= BASE CLARA ================= */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: url("op.png") no-repeat center center fixed;
-  background-size: cover;
+  background: #f4f6f8;
+  color: #111;
 }
 
-.overlay {
-  background: rgba(0,0,0,0.65);
-  min-height: 100vh;
-  padding: 15px;
-  box-sizing: border-box;
+/* ================= LOGOUT FIJO ================= */
+#logoutBtn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 999;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #c62828;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
 }
 
+/* ================= CONTENEDORES ================= */
 #loginBox, #app {
-  max-width: 420px;
-  margin: auto;
-  background: rgba(20,20,20,0.9);
+  max-width: 450px;
+  margin: 60px auto;
+  background: white;
   padding: 20px;
   border-radius: 12px;
-  color: white;
-  box-shadow: 0 0 15px rgba(0,0,0,0.6);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+/* ================= TITULOS ================= */
 h2, h3 {
   text-align: center;
+  margin-top: 10px;
 }
 
+/* ================= CAMPOS ================= */
 label {
   display:block;
-  margin-top: 10px;
+  margin-top: 12px;
   font-weight: bold;
+  font-size: 14px;
 }
 
 input, select, textarea {
@@ -47,11 +60,12 @@ input, select, textarea {
   padding: 12px;
   margin-top: 5px;
   border-radius: 8px;
-  border: none;
+  border: 1px solid #ccc;
   font-size: 16px;
   box-sizing: border-box;
 }
 
+/* ================= BOTONES ================= */
 button {
   width: 100%;
   padding: 14px;
@@ -63,25 +77,35 @@ button {
   cursor: pointer;
 }
 
-.btn-ok { background:#1e88e5; color:white; }
-.btn-secondary { background:#444; color:white; }
-.btn-danger { background:#c62828; color:white; }
+.btn-ok { background:#1976d2; color:white; }
+.btn-ok:hover { background:#125aa0; }
 
+.btn-secondary { background:#555; color:white; }
+
+/* ================= AVISOS ================= */
 .card {
-  background: rgba(255,255,255,0.08);
+  background: #fafafa;
+  border: 1px solid #ddd;
   border-radius: 10px;
   padding: 10px;
   margin-top: 10px;
-  color: white;
-  backdrop-filter: blur(4px);
 }
 
 .card button {
   width: 48%;
 }
 
+/* ================= RESPONSIVE ================= */
 @media (max-width: 600px) {
-  #loginBox, #app { width: 95%; }
+
+  #loginBox, #app {
+    margin: 20px 10px;
+    padding: 15px;
+  }
+
+  button {
+    font-size: 15px;
+  }
 }
 
 </style>
@@ -89,7 +113,8 @@ button {
 
 <body>
 
-<div class="overlay">
+<!-- 🔴 LOGOUT FIJO -->
+<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
 
 <!-- LOGIN -->
 <div id="loginBox">
@@ -125,12 +150,8 @@ button {
 
   <button id="btnOT" class="btn-secondary" onclick="goOT()">Generar OT</button>
 
-  <button class="btn-danger" onclick="logout()">Cerrar sesión</button>
-
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
-
-</div>
 
 </div>
 
@@ -161,10 +182,8 @@ async function login() {
   loginBox.style.display = "none";
   app.style.display = "block";
 
-  /* 🔐 CONTROL DE ROLES */
-  const isProduccion = USER.toLowerCase() === "produccion";
-
-  if (isProduccion) {
+  /* ROLES */
+  if (USER.toLowerCase() === "produccion") {
     document.getElementById("btnOT").style.display = "none";
   }
 
@@ -209,7 +228,7 @@ function fill(id, arr) {
   });
 }
 
-/* ================= CREAR AVISO ================= */
+/* ================= AVISO ================= */
 async function crearAviso() {
 
   const url = new URL(API);
@@ -240,7 +259,7 @@ async function loadAvisos() {
 
   avisos.innerHTML = "";
 
-  const isProduccion = USER.toLowerCase() === "produccion";
+  const isProd = USER.toLowerCase() === "produccion";
 
   (data || []).forEach(a => {
 
@@ -250,12 +269,12 @@ async function loadAvisos() {
         ${a.descripcion}<br>
 
         ${
-          !isProduccion
-          ? `<button class="btn-ok" onclick="convertir('${a.row}')">Convertir a OT</button>`
+          !isProd
+          ? `<button class="btn-ok" onclick="convertir('${a.row}')">OT</button>`
           : ""
         }
 
-        <button class="btn-secondary" onclick="rechazar('${a.row}')">Rechazar Aviso</button>
+        <button class="btn-secondary" onclick="rechazar('${a.row}')">X</button>
       </div>
     `;
   });
