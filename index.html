@@ -22,7 +22,7 @@ body {
   box-sizing: border-box;
 }
 
-/* ================= LOGOUT FIX REAL ================= */
+/* ================= LOGOUT ================= */
 #logoutBtn {
   position: fixed;
   top: 10px;
@@ -53,10 +53,8 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* ================= TITULOS ================= */
 h2, h3 { text-align:center; }
 
-/* ================= CAMPOS ================= */
 label {
   display:block;
   margin-top: 12px;
@@ -85,8 +83,23 @@ button {
   cursor: pointer;
 }
 
-.btn-ok { background:#1976d2; color:white; }
-.btn-secondary { background:#555; color:white; }
+/* 🟢 GENERAR AVISO (nuevo color) */
+.btn-aviso {
+  background: #2e7d32;
+  color: white;
+}
+
+/* 🔵 OT (unificado) */
+.btn-ot {
+  background: #1976d2;
+  color: white;
+}
+
+/* ⚫ eliminar aviso */
+.btn-delete {
+  background: #777;
+  color: white;
+}
 
 /* ================= AVISOS ================= */
 .card {
@@ -99,6 +112,14 @@ button {
 
 .card button {
   width: 48%;
+  font-size: 14px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 600px) {
+  #loginBox, #app {
+    margin: 20px 10px;
+  }
 }
 
 </style>
@@ -106,7 +127,6 @@ button {
 
 <body>
 
-<!-- 🔴 LOGOUT FIX -->
 <button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
 
 <div class="overlay">
@@ -121,7 +141,7 @@ button {
   <label>Password</label>
   <input id="pass" type="password">
 
-  <button class="btn-ok" onclick="login()">Entrar</button>
+  <button class="btn-ot" onclick="login()">Entrar</button>
 </div>
 
 <!-- APP -->
@@ -141,9 +161,9 @@ button {
   <label>Descripción</label>
   <textarea id="desc"></textarea>
 
-  <button class="btn-ok" onclick="crearAviso()">Generar Aviso</button>
+  <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
 
-  <button id="btnOT" class="btn-secondary" onclick="goOT()">Generar OT</button>
+  <button id="btnOT" class="btn-ot" onclick="goOT()">Generar OT</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
@@ -179,10 +199,8 @@ async function login() {
   loginBox.style.display = "none";
   app.style.display = "block";
 
-  /* mostrar logout */
   document.getElementById("logoutBtn").style.display = "block";
 
-  /* roles */
   if (USER.toLowerCase() === "produccion") {
     document.getElementById("btnOT").style.display = "none";
   }
@@ -206,9 +224,9 @@ function logout() {
   pass.value = "";
 }
 
-/* ================= RESTO SIN CAMBIOS ================= */
-
+/* ================= LISTAS ================= */
 async function loadLists() {
+
   const res = await fetch(API + "?action=listas");
   const data = await res.json();
 
@@ -220,6 +238,7 @@ async function loadLists() {
 function fill(id, arr) {
   const sel = document.getElementById(id);
   sel.innerHTML = "";
+
   (arr || []).forEach(v => {
     const o = document.createElement("option");
     o.value = v;
@@ -228,6 +247,7 @@ function fill(id, arr) {
   });
 }
 
+/* ================= AVISO ================= */
 async function crearAviso() {
 
   const url = new URL(API);
@@ -250,6 +270,7 @@ async function crearAviso() {
   }
 }
 
+/* ================= AVISOS ================= */
 async function loadAvisos() {
 
   const res = await fetch(API + "?action=avisos");
@@ -268,16 +289,17 @@ async function loadAvisos() {
 
         ${
           !isProd
-          ? `<button class="btn-ok" onclick="convertir('${a.row}')">Convertir a OT</button>`
+          ? `<button class="btn-ot" onclick="convertir('${a.row}')">Convertir a OT</button>`
           : ""
         }
 
-        <button class="btn-secondary" onclick="rechazar('${a.row}')">Rechazar Aviso</button>
+        <button class="btn-delete" onclick="rechazar('${a.row}')">Eliminar aviso</button>
       </div>
     `;
   });
 }
 
+/* ================= ACCIONES ================= */
 async function rechazar(row) {
   await fetch(API + "?action=rechazarAviso&row=" + row);
   loadAvisos();
