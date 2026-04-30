@@ -8,6 +8,8 @@
     body { font-family: Arial; padding: 20px; }
     #app { display:none; }
     .card { border:1px solid #ccc; padding:10px; margin:10px 0; }
+    .field { margin-bottom: 10px; }
+    label { font-weight: bold; display:block; margin-bottom:5px; }
     button { margin-right: 10px; }
   </style>
 </head>
@@ -29,15 +31,31 @@
 
   <h2>Generar Aviso / OT</h2>
 
-  <select id="maq"></select>
-  <select id="proy"></select>
-  <select id="tipo"></select>
+  <!-- MAQUINA -->
+  <div class="field">
+    <label>Máquina</label>
+    <select id="maq"></select>
+  </div>
 
-  <br><br>
+  <!-- PROYECTO -->
+  <div class="field">
+    <label>Proyecto</label>
+    <select id="proy"></select>
+  </div>
 
-  <textarea id="desc" placeholder="Descripción"></textarea><br><br>
+  <!-- TIPO AVERÍA -->
+  <div class="field">
+    <label>Tipo de Avería</label>
+    <select id="tipo"></select>
+  </div>
 
-  <!-- BOTONES -->
+  <!-- DESCRIPCIÓN -->
+  <div class="field">
+    <label>Descripción</label>
+    <textarea id="desc" placeholder="Descripción"></textarea>
+  </div>
+
+  <!-- BOTONES PRINCIPALES -->
   <button onclick="crearAviso()">Generar Aviso</button>
   <button onclick="goOT()">Generar OT</button>
 
@@ -101,7 +119,7 @@ function fill(id, arr) {
   });
 }
 
-// ================= AVISO =================
+// ================= CREAR AVISO =================
 async function crearAviso() {
 
   const url = new URL(API);
@@ -137,13 +155,31 @@ async function loadAvisos() {
     avisos.innerHTML += `
       <div class="card">
         <b>${a.maquina}</b><br>
-        ${a.descripcion}
+        ${a.descripcion}<br><br>
+
+        <button onclick="rechazar('${a.row}')">Rechazar</button>
+        <button onclick="convertir('${a.row}')">Convertir a OT</button>
       </div>
     `;
   });
 }
 
-// ================= 🔴 NUEVO BOTÓN OT =================
+// ================= RECHAZAR =================
+async function rechazar(row) {
+
+  await fetch(API + "?action=rechazarAviso&row=" + row);
+  loadAvisos();
+}
+
+// ================= CONVERTIR A OT =================
+function convertir(row) {
+
+  // De momento solo redirige a OT
+  // (más adelante pasaremos datos del aviso)
+  window.location.href = "ot.html?row=" + row;
+}
+
+// ================= IR OT DIRECTO =================
 function goOT() {
   window.location.href = "ot.html";
 }
