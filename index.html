@@ -1,44 +1,40 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Sistema OT</title>
+
   <style>
     body { font-family: Arial; padding: 20px; }
-    #app { display: none; }
-    .card { border: 1px solid #ccc; padding: 10px; margin: 8px 0; }
-    button { margin-top: 5px; }
+    #app { display:none; }
+    .card { border:1px solid #ccc; padding:10px; margin:10px 0; }
   </style>
 </head>
 
 <body>
 
-<!-- ================= LOGIN ================= -->
+<!-- LOGIN -->
 <div id="loginBox">
   <h2>Login</h2>
-
   <input id="user" placeholder="Usuario"><br><br>
   <input id="pass" type="password" placeholder="Password"><br><br>
-
   <button onclick="login()">Entrar</button>
 </div>
 
-<!-- ================= APP ================= -->
+<!-- APP -->
 <div id="app">
 
-  <h2>Generar Aviso / OT</h2>
+  <h2>Generar Aviso</h2>
 
   <select id="maq"></select>
   <select id="proy"></select>
   <select id="tipo"></select>
-  <select id="hora"></select>
 
   <br><br>
 
   <textarea id="desc" placeholder="Descripción"></textarea><br><br>
 
   <button onclick="crearAviso()">Generar Aviso</button>
-  <button onclick="irOT()">Generar OT</button>
 
   <h3>Avisos pendientes</h3>
   <div id="avisos"></div>
@@ -47,24 +43,16 @@
 
 <script>
 
-// ======================================================
-// 🔴 CAMBIA ESTO POR TU URL REAL DE APPS SCRIPT
-// ======================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
+// 🔴 TU URL REAL DE APPS SCRIPT
+const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
 
 let USER = "";
 let EMISOR = "";
-let PUEDE_OT = false;
 
-// ======================================================
-// LOGIN
-// ======================================================
+// ================= LOGIN =================
 async function login() {
 
-  const u = user.value;
-  const p = pass.value;
-
-  const res = await fetch(`${API_URL}?action=login&user=${u}&pass=${p}`);
+  const res = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
   const data = await res.json();
 
   if (!data.ok) {
@@ -72,7 +60,7 @@ async function login() {
     return;
   }
 
-  USER = u;
+  USER = user.value;
   EMISOR = data.emisor;
 
   loginBox.style.display = "none";
@@ -82,18 +70,15 @@ async function login() {
   loadAvisos();
 }
 
-// ======================================================
-// LISTAS
-// ======================================================
+// ================= LISTAS =================
 async function loadLists() {
 
-  const res = await fetch(`${API_URL}?action=listas`);
+  const res = await fetch(API + "?action=listas");
   const data = await res.json();
 
   fill("maq", data.MAQUINA);
   fill("proy", data.PROYECTO);
   fill("tipo", data.AVERIA);
-  fill("hora", data.HORA);
 }
 
 function fill(id, arr) {
@@ -109,36 +94,45 @@ function fill(id, arr) {
   });
 }
 
-// ======================================================
-// CREAR AVISO
-// ======================================================
+// ================= 🔴 FIX CLAVE: CREAR AVISO =================
 async function crearAviso() {
 
-  const body = {
-    id: "AV-" + Date.now(),
-    usuario: USER,
-    maquina: maq.value,
-    proyecto: proy.value,
-    tipo: tipo.value,
-    descripcion: desc.value
-  };
+  const url = https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec;
 
-  await fetch(API_URL + "?action=crearAviso", {
-    method: "POST",
-    body: JSON.stringify(body)
-  });
+  url.searchParams.append("action", "crearAviso");
+  url.searchParams.append("id", "AV-" + Date.now());
+  url.searchParams.append("usuario", USER);
+  url.searchParams.append("maquina", maq.value);
+  url.searchParams.append("proyecto", proy.value);
+  url.searchParams.append("tipo", tipo.value);
+  url.searchParams.append("descripcion", desc.value);
 
-  alert("Aviso creado");
-  desc.value = "";
-  loadAvisos();
+  try {
+
+    const res = await fetch(url.toString());
+    const data = await res.json();
+
+    if (!data.ok) {
+      console.error(data);
+      alert("Error creando aviso");
+      return;
+    }
+
+    alert("Aviso creado correctamente");
+
+    desc.value = "";
+    loadAvisos();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error de conexión con el servidor");
+  }
 }
 
-// ======================================================
-// AVISOS
-// ======================================================
+// ================= AVISOS =================
 async function loadAvisos() {
 
-  const res = await fetch(`${API_URL}?action=avisos`);
+  const res = await fetch(API + "?action=avisos");
   const data = await res.json();
 
   avisos.innerHTML = "";
@@ -150,39 +144,26 @@ async function loadAvisos() {
         <b>${a.maquina}</b><br>
         ${a.descripcion}<br><br>
 
-        <button onclick="rechazar('${a.id}')">Rechazar</button>
-        <button onclick="convertir('${a.id}')">Convertir OT</button>
+        <button onclick="rechazar('${a.row}')">Rechazar</button>
+        <button onclick="convertir('${a.row}')">Convertir OT</button>
       </div>
     `;
   });
 }
 
-// ======================================================
-// RECHAZAR
-// ======================================================
-async function rechazar(id) {
-
-  await fetch(API_URL + "?action=rechazarAviso&id=" + id);
-
+// ================= RECHAZAR =================
+async function rechazar(row) {
+  await fetch(API + "?action=rechazarAviso&row=" + row);
   loadAvisos();
 }
 
-// ======================================================
-// CONVERTIR OT
-// ======================================================
-async function convertir(id) {
+// ================= CONVERTIR OT =================
+async function convertir(row) {
 
-  await fetch(API_URL + "?action=crearOT&id=" + id + "&emisor=" + EMISOR);
+  await fetch(API + "?action=crearOT&row=" + row + "&emisor=" + EMISOR);
 
   alert("OT creada");
   loadAvisos();
-}
-
-// ======================================================
-// IR OT (futuro formulario)
-// ======================================================
-function irOT() {
-  alert("Aquí irá el formulario OT completo");
 }
 
 </script>
