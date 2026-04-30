@@ -2,283 +2,144 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>OT - Sistema</title>
+<title>OT Industrial</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: url("op.png") no-repeat center center fixed;
-  background-size: cover;
+body{
+margin:0;
+font-family:Arial;
+background:#f2f2f2;
 }
 
-.overlay {
-  min-height: 100vh;
-  background: rgba(255,255,255,0.92);
-  padding: 15px;
-  box-sizing: border-box;
+#app{
+max-width:600px;
+margin:auto;
+background:white;
+padding:20px;
 }
 
-#logoutBtn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 9999;
-
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #c62828;
-  color: white;
-  font-weight: bold;
-  font-size: 13px;
-  cursor: pointer;
+input,select,textarea{
+width:100%;
+padding:10px;
+margin-top:6px;
+box-sizing:border-box;
 }
 
-#app {
-  max-width: 520px;
-  margin: 60px auto;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:8px;
+font-weight:bold;
 }
 
-h2, h3 { text-align:center; }
-
-label {
-  display:block;
-  margin-top: 12px;
-  font-weight: bold;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 12px;
-  margin-top: 5px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-  box-sizing: border-box;
-}
-
-button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-ok { background:#1976d2; color:white; }
-.btn-green { background:#2e7d32; color:white; }
-.btn-gray { background:#555; color:white; }
-
-.hidden { display:none; }
+.btn-save{background:#2e7d32;color:white;}
+.btn-back{background:#777;color:white;}
 
 </style>
 </head>
 
 <body>
 
-<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
-
-<div class="overlay">
-
 <div id="app">
 
-  <h2>Orden de Trabajo</h2>
+<h2>Orden de Trabajo</h2>
 
-  <!-- BOTÓN VOLVER -->
-  <button class="btn-gray" onclick="back()">← Volver</button>
+<button class="btn-back" onclick="back()">← Volver</button>
 
-  <!-- AVISO / OT -->
-  <label>Máquina</label>
-  <input id="maq">
+<input id="maq">
+<input id="proy">
+<input id="tipo">
+<textarea id="desc"></textarea>
 
-  <label>Proyecto</label>
-  <input id="proy">
+<select id="estado">
+<option>ABIERTA</option>
+<option>CERRADA</option>
+</select>
 
-  <label>Tipo Avería</label>
-  <input id="tipo">
+<input id="emisor" readonly>
 
-  <label>Descripción</label>
-  <textarea id="desc"></textarea>
+<input id="op1">
+<input id="t1">
 
-  <hr>
+<textarea id="cerrar" placeholder="Descripción cierre"></textarea>
 
-  <!-- ESTADO OT -->
-  <label>Estado OT</label>
-  <select id="estado">
-    <option>ABIERTA</option>
-    <option>CERRADA</option>
-  </select>
+<select id="plan">
+<option>NO</option>
+<option>SI</option>
+</select>
 
-  <!-- EMISOR -->
-  <label>Emisor OT</label>
-  <input id="emisor" readonly>
+<textarea id="planDesc" placeholder="Planificación"></textarea>
 
-  <hr>
-
-  <!-- OPERARIOS -->
-  <label>Operario 1</label>
-  <input id="op1">
-
-  <label>Tiempo 1</label>
-  <input id="t1" type="number">
-
-  <div id="extraOps"></div>
-
-  <button class="btn-gray" onclick="addOp()">+ Añadir operario</button>
-
-  <hr>
-
-  <!-- TIEMPO INT -->
-  <label>Tiempo Int</label>
-  <input id="tint">
-
-  <!-- PLANIFICACIÓN -->
-  <label>Planificar Acción</label>
-  <select id="plan" onchange="togglePlan()">
-    <option value="NO">NO</option>
-    <option value="SI">SI</option>
-  </select>
-
-  <div id="planBox" class="hidden">
-    <label>Descripción Planificación</label>
-    <textarea id="planDesc"></textarea>
-  </div>
-
-  <!-- DESCRIPCIÓN CIERRE (MOVIDA AQUÍ) -->
-  <label>Descripción Cierre</label>
-  <textarea id="cerrar"></textarea>
-
-  <!-- GUARDAR -->
-  <button class="btn-green" onclick="guardar()">Guardar OT</button>
-
-</div>
+<button class="btn-save" onclick="guardar()">Guardar OT</button>
 
 </div>
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
+const API="TU_URL_AQUI";
 
-let USER = "";
-let EMISOR = "";
-let opCount = 1;
+let EMISOR="";
 
-/* ================= INIT ================= */
-window.onload = async () => {
+/* INIT */
+window.onload=async()=>{
 
-  const params = new URLSearchParams(window.location.search);
-  const row = params.get("row");
+const row=new URLSearchParams(location.search).get("row");
 
-  await loadSession();
+const r=await fetch(API+"?action=session");
+const d=await r.json();
 
-  emisor.value = EMISOR;
-  op1.value = EMISOR;
+EMISOR=d.emisor;
 
-  if (row) {
-    loadAviso(row);
-  }
-  // si no hay row → OT manual vacía (CORRECTO)
+emisor.value=EMISOR;
+op1.value=EMISOR;
+
+if(row) loadAviso(row);
 }
 
-/* ================= SESSION ================= */
-async function loadSession() {
+/* AVISO */
+async function loadAviso(row){
 
-  const res = await fetch(API + "?action=session");
-  const data = await res.json();
+const r=await fetch(API+"?action=getAviso&row="+row);
+const d=await r.json();
 
-  USER = data.user;
-  EMISOR = data.emisor;
+maq.value=d.maquina||"";
+proy.value=d.proyecto||"";
+tipo.value=d.tipo||"";
+desc.value=d.descripcion||"";
 }
 
-/* ================= AVISO ================= */
-async function loadAviso(row) {
+/* GUARDAR */
+async function guardar(){
 
-  const res = await fetch(API + "?action=getAviso&row=" + row);
-  const a = await res.json();
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"guardarOT",
+maquina:maq.value,
+proyecto:proy.value,
+tipo:tipo.value,
+descripcion:desc.value,
+estado:estado.value,
+emisor:emisor.value,
+op1:op1.value,
+t1:t1.value,
+cerrar:cerrar.value,
+plan:plan.value,
+planDesc:planDesc.value
+})
+});
 
-  maq.value = a.maquina || "";
-  proy.value = a.proyecto || "";
-  tipo.value = a.tipo || "";
-  desc.value = a.descripcion || "";
+alert("OT guardada");
 }
 
-/* ================= OPERARIOS ================= */
-function addOp() {
-
-  if (opCount >= 5) return;
-
-  opCount++;
-
-  const div = document.createElement("div");
-
-  div.innerHTML = `
-    <label>Operario ${opCount}</label>
-    <input id="op${opCount}">
-    <label>Tiempo ${opCount}</label>
-    <input id="t${opCount}" type="number">
-  `;
-
-  extraOps.appendChild(div);
-}
-
-/* ================= PLAN ================= */
-function togglePlan() {
-  planBox.classList.toggle("hidden", plan.value !== "SI");
-}
-
-/* ================= GUARDAR ================= */
-async function guardar() {
-
-  const payload = {
-    action: "guardarOT",
-    maquina: maq.value,
-    proyecto: proy.value,
-    tipo: tipo.value,
-    descripcion: desc.value,
-    estado: estado.value,
-    emisor: emisor.value,
-    op1: op1.value,
-    t1: t1.value,
-    op2: op2?.value || "",
-    t2: t2?.value || "",
-    op3: op3?.value || "",
-    t3: t3?.value || "",
-    op4: op4?.value || "",
-    t4: t4?.value || "",
-    op5: op5?.value || "",
-    t5: t5?.value || "",
-    tint: tint.value,
-    cerrar: cerrar.value,
-    plan: plan.value,
-    planDesc: planDesc.value
-  };
-
-  await fetch(API, {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-
-  alert("OT guardada correctamente");
-}
-
-/* ================= NAV ================= */
-function back() {
-  window.location.href = "index.html";
-}
-
-function logout() {
-  window.location.href = "index.html";
+/* BACK */
+function back(){
+window.location="index.html";
 }
 
 </script>

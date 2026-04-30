@@ -2,171 +2,139 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Sistema OT</title>
+<title>Sistema OT Industrial</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: url("op.png") no-repeat center center fixed;
-  background-size: cover;
+body{
+margin:0;
+font-family:Arial;
+background:url("op.png") no-repeat center center fixed;
+background-size:cover;
 }
 
-.overlay {
-  min-height: 100vh;
-  background: rgba(255,255,255,0.92);
-  padding: 15px;
-  box-sizing: border-box;
+.overlay{
+min-height:100vh;
+background:rgba(255,255,255,0.93);
+padding:15px;
+box-sizing:border-box;
 }
 
-/* ================= LOGOUT ================= */
-#logoutBtn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 9999;
-
-  width: auto !important;
-  padding: 8px 12px;
-
-  border: none;
-  border-radius: 8px;
-  background: #c62828;
-  color: white;
-  font-weight: bold;
-  font-size: 13px;
-
-  cursor: pointer;
-  display: none;
+/* LOGIN */
+#loginBox{
+max-width:400px;
+margin:80px auto;
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
 }
 
-/* ================= CONTENEDORES ================= */
-#loginBox, #app {
-  max-width: 450px;
-  margin: 60px auto;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+/* APP */
+#app{
+display:none;
+max-width:600px;
+margin:auto;
 }
 
-h2, h3 { text-align:center; }
-
-label {
-  display:block;
-  margin-top: 12px;
-  font-weight: bold;
+/* HEADER */
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
-input, select, textarea {
-  width: 100%;
-  padding: 12px;
-  margin-top: 5px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-  box-sizing: border-box;
+.logout{
+background:#c62828;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:8px;
+cursor:pointer;
 }
 
-/* ================= BOTONES ================= */
-button {
-  width: 100%;
-  padding: 14px;
-  margin-top: 10px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
+/* CARDS */
+.card{
+background:white;
+padding:12px;
+margin-top:10px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* 🟢 GENERAR AVISO (nuevo color) */
-.btn-aviso {
-  background: #2e7d32;
-  color: white;
+/* INPUTS */
+input,select,textarea{
+width:100%;
+padding:12px;
+margin-top:6px;
+border-radius:8px;
+border:1px solid #ccc;
+box-sizing:border-box;
+font-size:15px;
 }
 
-/* 🔵 OT (unificado) */
-.btn-ot {
-  background: #1976d2;
-  color: white;
+/* BUTTONS */
+button{
+width:100%;
+padding:12px;
+margin-top:8px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+cursor:pointer;
 }
 
-/* ⚫ eliminar aviso */
-.btn-delete {
-  background: #777;
-  color: white;
-}
+.btn-aviso{background:#2e7d32;color:white;}
+.btn-ot{background:#1976d2;color:white;}
+.btn-del{background:#616161;color:white;}
 
-/* ================= AVISOS ================= */
-.card {
-  background: #fafafa;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  padding: 10px;
-  margin-top: 10px;
-}
-
-.card button {
-  width: 48%;
-  font-size: 14px;
-}
-
-/* ================= RESPONSIVE ================= */
-@media (max-width: 600px) {
-  #loginBox, #app {
-    margin: 20px 10px;
-  }
-}
+.hidden{display:none;}
 
 </style>
 </head>
 
 <body>
 
-<button id="logoutBtn" onclick="logout()">Cerrar sesión</button>
-
 <div class="overlay">
 
 <!-- LOGIN -->
 <div id="loginBox">
-  <h2>Acceso Sistema OT</h2>
+<h2>Login</h2>
 
-  <label>Usuario</label>
-  <input id="user">
+<input id="user" placeholder="Usuario">
+<input id="pass" type="password" placeholder="Password">
 
-  <label>Password</label>
-  <input id="pass" type="password">
-
-  <button class="btn-ot" onclick="login()">Entrar</button>
+<button onclick="login()">Entrar</button>
 </div>
 
 <!-- APP -->
-<div id="app" style="display:none">
+<div id="app">
 
-  <h2>Generar Aviso</h2>
+<div class="header">
+<h2>Sistema OT</h2>
+<button class="logout" onclick="logout()">Salir</button>
+</div>
 
-  <label>Máquina</label>
-  <select id="maq"></select>
+<!-- FORM AVISO -->
+<h3>Generar Aviso</h3>
 
-  <label>Proyecto</label>
-  <select id="proy"></select>
+<select id="maq"></select>
+<select id="proy"></select>
+<select id="tipo"></select>
 
-  <label>Tipo de Avería</label>
-  <select id="tipo"></select>
+<textarea id="desc" placeholder="Descripción"></textarea>
 
-  <label>Descripción</label>
-  <textarea id="desc"></textarea>
+<button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
 
-  <button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
+<button id="btnOT" class="btn-ot" onclick="goOT()">Generar OT</button>
 
-  <button id="btnOT" class="btn-ot" onclick="goOT()">Generar OT</button>
+<hr>
 
-  <h3>Avisos pendientes</h3>
-  <div id="avisos"></div>
+<!-- AVISOS -->
+<h3>Avisos pendientes</h3>
+<div id="avisos"></div>
 
 </div>
 
@@ -174,143 +142,117 @@ button {
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbx-xpq3eFe_TzggjI7u0ZG8crrpZZo_PZYhlquQGEParVor6VRnYpN0ngEz-b4r6ZU8/exec";
+const API="TU_URL_AQUI";
 
-let USER = "";
-let EMISOR = "";
+let USER="";
+let EMISOR="";
+let ROL="";
 
 /* ================= LOGIN ================= */
-async function login() {
+async function login(){
 
-  const u = user.value;
-  const p = pass.value;
+const r=await fetch(API+"?action=login&user="+user.value+"&pass="+pass.value);
+const d=await r.json();
 
-  const res = await fetch(`${API}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`);
-  const data = await res.json();
-
-  if (!data.ok) {
-    alert("Login incorrecto");
-    return;
-  }
-
-  USER = u;
-  EMISOR = data.emisor;
-
-  loginBox.style.display = "none";
-  app.style.display = "block";
-
-  document.getElementById("logoutBtn").style.display = "block";
-
-  if (USER.toLowerCase() === "produccion") {
-    document.getElementById("btnOT").style.display = "none";
-  }
-
-  loadLists();
-  loadAvisos();
+if(!d.ok){
+alert("Login incorrecto");
+return;
 }
 
-/* ================= LOGOUT ================= */
-function logout() {
+USER=user.value;
+EMISOR=d.emisor;
+ROL=user.value.toLowerCase();
 
-  USER = "";
-  EMISOR = "";
+loginBox.style.display="none";
+app.style.display="block";
 
-  loginBox.style.display = "block";
-  app.style.display = "none";
+/* PRODUCCIÓN LIMITADO */
+if(ROL==="produccion"){
+document.getElementById("btnOT").style.display="none";
+}
 
-  document.getElementById("logoutBtn").style.display = "none";
-
-  user.value = "";
-  pass.value = "";
+loadLists();
+loadAvisos();
 }
 
 /* ================= LISTAS ================= */
-async function loadLists() {
+async function loadLists(){
 
-  const res = await fetch(API + "?action=listas");
-  const data = await res.json();
+const r=await fetch(API+"?action=listas");
+const d=await r.json();
 
-  fill("maq", data.MAQUINA);
-  fill("proy", data.PROYECTO);
-  fill("tipo", data.AVERIA);
+maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
+proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
+tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 }
 
-function fill(id, arr) {
-  const sel = document.getElementById(id);
-  sel.innerHTML = "";
+/* ================= CREAR AVISO ================= */
+async function crearAviso(){
 
-  (arr || []).forEach(v => {
-    const o = document.createElement("option");
-    o.value = v;
-    o.text = v;
-    sel.add(o);
-  });
-}
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"crearAviso",
+usuario:USER,
+maquina:maq.value,
+proyecto:proy.value,
+tipo:tipo.value,
+descripcion:desc.value
+})
+});
 
-/* ================= AVISO ================= */
-async function crearAviso() {
-
-  const url = new URL(API);
-
-  url.searchParams.append("action", "crearAviso");
-  url.searchParams.append("id", "AV-" + Date.now());
-  url.searchParams.append("usuario", USER);
-  url.searchParams.append("maquina", maq.value);
-  url.searchParams.append("proyecto", proy.value);
-  url.searchParams.append("tipo", tipo.value);
-  url.searchParams.append("descripcion", desc.value);
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  if (data.ok) {
-    alert("Aviso creado correctamente");
-    desc.value = "";
-    loadAvisos();
-  }
+desc.value="";
+loadAvisos();
 }
 
 /* ================= AVISOS ================= */
-async function loadAvisos() {
+async function loadAvisos(){
 
-  const res = await fetch(API + "?action=avisos");
-  const data = await res.json();
+const r=await fetch(API+"?action=avisos");
+const d=await r.json();
 
-  avisos.innerHTML = "";
+avisos.innerHTML="";
 
-  const isProd = USER.toLowerCase() === "produccion";
+d.forEach(a=>{
 
-  (data || []).forEach(a => {
+avisos.innerHTML+=`
+<div class="card">
+<b>${a.maquina}</b><br>
+${a.descripcion}
 
-    avisos.innerHTML += `
-      <div class="card">
-        <b>${a.maquina}</b><br>
-        ${a.descripcion}<br>
+<button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
+<button class="btn-del" onclick="eliminar(${a.row})">Eliminar aviso</button>
+</div>
+`;
 
-        ${
-          !isProd
-          ? `<button class="btn-ot" onclick="convertir('${a.row}')">Convertir a OT</button>`
-          : ""
-        }
+});
 
-        <button class="btn-delete" onclick="rechazar('${a.row}')">Eliminar aviso</button>
-      </div>
-    `;
-  });
 }
 
-/* ================= ACCIONES ================= */
-async function rechazar(row) {
-  await fetch(API + "?action=rechazarAviso&row=" + row);
-  loadAvisos();
+/* ================= CONVERTIR ================= */
+async function convertir(row){
+
+await fetch(API+"?action=convertirAviso&row="+row);
+
+window.location="ot.html?row="+row;
 }
 
-function convertir(row) {
-  window.location.href = "ot.html?row=" + row;
+/* ================= ELIMINAR ================= */
+async function eliminar(row){
+
+await fetch(API+"?action=rechazarAviso&row="+row+"&user="+USER);
+
+loadAvisos();
 }
 
-function goOT() {
-  window.location.href = "ot.html";
+/* ================= OT ================= */
+function goOT(){
+window.location="ot.html";
+}
+
+/* ================= LOGOUT ================= */
+function logout(){
+location.reload();
 }
 
 </script>
