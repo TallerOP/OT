@@ -14,25 +14,76 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;}
 
 <div class="box">
 
+<label>Hora</label>
 <select id="hora"></select>
+
+<label>Máquina</label>
 <input id="maq">
+
+<label>Proyecto</label>
 <input id="proy">
+
+<label>Código avería</label>
 <input id="tipo">
+
+<label>Descripción crear</label>
 <textarea id="desc"></textarea>
 
+<label>Estado OT</label>
+<select id="estado">
+<option>ABIERTA</option>
+<option>CERRADA</option>
+</select>
+
+<label>Emisor OT</label>
 <input id="emisor">
+
+<label>Operario 1</label>
 <input id="op1">
+<label>Tiempo 1</label>
 <input id="t1">
 
+<label>Material 1</label>
+<input id="mat1">
+<label>Material 2</label>
+<input id="mat2">
+<label>Material 3</label>
+<input id="mat3">
+<label>Material 4</label>
+<input id="mat4">
+
+<label>Tiempo intervención</label>
+<input id="tint">
+
+<label>Qtt1</label>
+<input id="qtt1">
+
+<label>Descripción cerrar</label>
 <textarea id="cerrar"></textarea>
 
-<button onclick="guardar()">Guardar</button>
+<label>Planificar acción</label>
+<select id="plan">
+<option>NO</option>
+<option>SI</option>
+</select>
+
+<label>Descripción planificación</label>
+<textarea id="planDesc"></textarea>
+
+<label>Qtt2</label>
+<input id="qtt2">
+<label>Qtt3</label>
+<input id="qtt3">
+<label>Qtt4</label>
+<input id="qtt4">
+
+<button onclick="guardar()">Guardar OT</button>
 
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbyGuXys9T1o6vfBHU2WP8wmOSl5kx3zruwQSU0X0J3MrFnkKAVjpdSij1qPB_3q-oEz/exec";
+const API="https://script.google.com/macros/s/AKfycbybqjljMrf5r3oRViGn1-XW8WVXp3ujk7Zs6u_1UgyTwMs0K3O-Iw5qiawHuigfaE-a/exec";
 
 window.onload=async()=>{
 
@@ -54,6 +105,14 @@ maq.value=a.maquina;
 proy.value=a.proyecto;
 tipo.value=a.tipo;
 desc.value=a.descripcion;
+}else if(localStorage.tmp){
+
+const t=JSON.parse(localStorage.tmp);
+
+maq.value=t.maq;
+proy.value=t.proy;
+tipo.value=t.tipo;
+desc.value=t.desc;
 }
 };
 
@@ -61,21 +120,20 @@ async function guardar(){
 
 const p=new URLSearchParams();
 
+[
+"hora","estado","emisor","maquina","proyecto","tipo","descripcion",
+"cerrar","plan","planDesc",
+"op1","t1",
+"mat1","mat2","mat3","mat4",
+"tint",
+"qtt1","qtt2","qtt3","qtt4"
+].forEach(id=>p.append(id,document.getElementById(id)?.value||""));
+
 p.append("action","guardarOT");
-p.append("hora",hora.value);
-p.append("estado","ABIERTA");
-p.append("emisor",emisor.value);
-p.append("maquina",maq.value);
-p.append("proyecto",proy.value);
-p.append("tipo",tipo.value);
-p.append("descripcion",desc.value);
-p.append("cerrar",cerrar.value);
-p.append("op1",op1.value);
-p.append("t1",t1.value);
 
 await fetch(API,{method:"POST",body:p});
 
-alert("OK");
+alert("OT guardada");
 }
 
 </script>

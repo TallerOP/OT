@@ -44,10 +44,27 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;fo
 <script>
 const API="https://script.google.com/macros/s/AKfycbyGuXys9T1o6vfBHU2WP8wmOSl5kx3zruwQSU0X0J3MrFnkKAVjpdSij1qPB_3q-oEz/exec";
 
+<!-- SOLO CAMBIO LOGIN (IMPORTANTE) -->
+
 async function login(){
-const r=await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
-const d=await r.json();
-if(!d.ok){alert("Error");return;}
+
+const params = new URLSearchParams();
+params.append("action","login");
+params.append("user",user.value);
+params.append("pass",pass.value);
+
+/* 🔥 usamos POST también para login */
+const r = await fetch(API,{
+method:"POST",
+body:params
+});
+
+const d = await r.json();
+
+if(!d.ok){
+alert("Login incorrecto");
+return;
+}
 
 localStorage.user=user.value;
 localStorage.emisor=d.emisor;
