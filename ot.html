@@ -1,21 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OT</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{margin:0;font-family:Arial;background:#f2f2f2;}
+body{font-family:Arial;background:#f2f2f2;margin:0;}
 .box{max-width:500px;margin:auto;background:white;padding:15px;}
-
-input,select,textarea{
-width:100%;padding:10px;margin-top:5px;border:1px solid #ccc;border-radius:8px;
-}
-
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;}
-
-.save{background:#2e7d32;color:white;}
-.back{background:#777;color:white;}
+input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;}
 </style>
 </head>
 
@@ -23,63 +14,41 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;fo
 
 <div class="box">
 
-<button class="back" onclick="back()">Volver</button>
-
-<h2>OT</h2>
-
-<label>Hora</label>
 <select id="hora"></select>
-
-<label>Máquina</label>
 <input id="maq">
-
-<label>Proyecto</label>
 <input id="proy">
-
-<label>Avería</label>
 <input id="tipo">
-
-<label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<label>Estado</label>
-<select id="estado"><option>ABIERTA</option><option>CERRADA</option></select>
-
-<label>Emisor</label>
 <input id="emisor">
-
-<label>Operario 1</label>
 <input id="op1">
-
-<label>Tiempo 1</label>
 <input id="t1">
 
-<label>Cierre</label>
 <textarea id="cerrar"></textarea>
 
-<button class="save" onclick="guardarOT()">Guardar OT</button>
+<button onclick="guardar()">Guardar</button>
 
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
+const API="https://script.google.com/macros/s/AKfycbyGuXys9T1o6vfBHU2WP8wmOSl5kx3zruwQSU0X0J3MrFnkKAVjpdSij1qPB_3q-oEz/exec";
 
 window.onload=async()=>{
 
-emisor.value=localStorage.emisor||"";
-op1.value=localStorage.emisor||"";
+emisor.value=localStorage.emisor;
+op1.value=localStorage.emisor;
 
-const r = await fetch(`${API}?action=listas`);
-const d = await r.json();
+const r=await fetch(`${API}?action=listas`);
+const d=await r.json();
 
-hora.innerHTML = d.HORA.map(x=>`<option>${x}</option>`).join("");
+hora.innerHTML=d.HORA.map(x=>`<option>${x}</option>`);
 
-const row = new URLSearchParams(location.search).get("row");
+const row=new URLSearchParams(location.search).get("row");
 
 if(row){
-const r2 = await fetch(`${API}?action=getAviso&row=${row}`);
-const a = await r2.json();
+const r2=await fetch(`${API}?action=getAviso&row=${row}`);
+const a=await r2.json();
 
 maq.value=a.maquina;
 proy.value=a.proyecto;
@@ -88,38 +57,25 @@ desc.value=a.descripcion;
 }
 };
 
-/* ================= GUARDAR OT (FIX REAL) ================= */
-async function guardarOT(){
+async function guardar(){
 
-const payload = {
-action:"guardarOT",
-hora:hora.value,
-estado:estado.value,
-emisor:emisor.value,
-maquina:maq.value,
-proyecto:proy.value,
-tipo:tipo.value,
-descripcion:desc.value,
-cerrar:cerrar.value,
-op1:op1.value,
-t1:t1.value
-};
+const p=new URLSearchParams();
 
-await fetch(API,{
-method:"POST",
-mode:"cors",
-redirect:"follow",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify(payload)
-});
+p.append("action","guardarOT");
+p.append("hora",hora.value);
+p.append("estado","ABIERTA");
+p.append("emisor",emisor.value);
+p.append("maquina",maq.value);
+p.append("proyecto",proy.value);
+p.append("tipo",tipo.value);
+p.append("descripcion",desc.value);
+p.append("cerrar",cerrar.value);
+p.append("op1",op1.value);
+p.append("t1",t1.value);
 
-alert("OT guardada");
-}
+await fetch(API,{method:"POST",body:p});
 
-function back(){
-location="index.html";
+alert("OK");
 }
 
 </script>

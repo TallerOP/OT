@@ -1,192 +1,124 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión OT</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{margin:0;font-family:Arial;background:url("op.png") center/cover fixed;}
-.overlay{background:rgba(255,255,255,0.94);min-height:100vh;padding:15px;}
-.container{max-width:500px;margin:auto;}
-
-#loginBox{background:white;padding:20px;border-radius:12px;margin-top:40px;}
-
-#app{display:none;}
-
-input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;}
-
+body{font-family:Arial;margin:0;background:url("op.png") center/cover fixed;}
+.wrap{background:rgba(255,255,255,0.95);min-height:100vh;padding:15px;}
+.box{max-width:500px;margin:auto;}
+input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
 button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;}
-
 .aviso{background:#2e7d32;color:white;}
 .ot{background:#1976d2;color:white;}
 .del{background:#616161;color:white;}
-
-.logout{width:auto;font-size:12px;background:#d32f2f;color:white;padding:6px 10px;border-radius:6px;border:none;}
-
-.card{background:white;padding:10px;margin-top:10px;border-radius:10px;}
-.header{display:flex;justify-content:space-between;align-items:center;}
 </style>
 </head>
 
 <body>
 
-<div class="overlay">
-<div class="container">
+<div class="wrap">
+<div class="box">
 
-<div id="loginBox">
-<h2>Login</h2>
+<div id="login">
 <input id="user" placeholder="Usuario">
 <input id="pass" type="password" placeholder="Password">
 <button onclick="login()">Entrar</button>
 </div>
 
-<div id="app">
+<div id="app" style="display:none">
 
-<div class="header">
-<h3>OT System</h3>
-<button class="logout" onclick="logout()">Salir</button>
-</div>
-
-<label>Máquina</label>
 <select id="maq"></select>
-
-<label>Proyecto</label>
 <select id="proy"></select>
-
-<label>Tipo avería</label>
 <select id="tipo"></select>
-
-<label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<button class="aviso" onclick="crearAviso()">Generar Aviso</button>
-<button class="ot" onclick="irOT()">Generar OT</button>
-
-<hr>
+<button class="aviso" onclick="crearAviso()">Aviso</button>
+<button class="ot" onclick="irOT()">OT</button>
 
 <div id="avisos"></div>
 
 </div>
-
 </div>
 </div>
 
 <script>
+const API="https://script.google.com/macros/s/AKfycbyGuXys9T1o6vfBHU2WP8wmOSl5kx3zruwQSU0X0J3MrFnkKAVjpdSij1qPB_3q-oEz/exec";
 
-const API="https://script.google.com/macros/s/AKfycbxKW2ayMcsmlFIUs76wjKDCnBHarYYT64GAky-Vw7eCSyba-yMR-GLe6hvyIYscxsUg/exec";
-
-/* ================= LOGIN ================= */
 async function login(){
-
-const res = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
-const data = await res.json();
-
-if(!data.ok){
-alert("Login incorrecto");
-return;
-}
+const r=await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
+const d=await r.json();
+if(!d.ok){alert("Error");return;}
 
 localStorage.user=user.value;
-localStorage.emisor=data.emisor;
+localStorage.emisor=d.emisor;
 
-loginBox.style.display="none";
+login.style.display="none";
 app.style.display="block";
 
-loadLists();
+load();
+}
+
+async function load(){
+const r=await fetch(`${API}?action=listas`);
+const d=await r.json();
+
+maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`);
+proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`);
+tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`);
+
 loadAvisos();
 }
 
-/* ================= LISTAS ================= */
-async function loadLists(){
-const res = await fetch(`${API}?action=listas`);
-const d = await res.json();
-
-maq.innerHTML = d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
-proy.innerHTML = d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
-tipo.innerHTML = d.AVERIA.map(x=>`<option>${x}</option>`).join("");
-}
-
-/* ================= AVISO ================= */
 async function crearAviso(){
 
-await fetch(API,{
-method:"POST",
-mode:"cors",
-redirect:"follow",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-action:"crearAviso",
-usuario:localStorage.user,
-maquina:maq.value,
-proyecto:proy.value,
-tipo:tipo.value,
-descripcion:desc.value
-})
-});
+const p=new URLSearchParams();
+p.append("action","crearAviso");
+p.append("usuario",localStorage.user);
+p.append("maquina",maq.value);
+p.append("proyecto",proy.value);
+p.append("tipo",tipo.value);
+p.append("descripcion",desc.value);
+
+await fetch(API,{method:"POST",body:p});
 
 desc.value="";
 loadAvisos();
 }
 
-/* ================= LOAD AVISOS ================= */
 async function loadAvisos(){
-
-const r = await fetch(`${API}?action=avisos`);
-const d = await r.json();
+const r=await fetch(`${API}?action=avisos`);
+const d=await r.json();
 
 avisos.innerHTML="";
-
 d.forEach(a=>{
 avisos.innerHTML+=`
-<div class="card">
-<b>${a.maquina}</b><br>${a.descripcion}
-<button class="ot" onclick="convertir(${a.row})">Convertir a OT</button>
-<button class="del" onclick="rechazar(${a.row})">Eliminar aviso</button>
+<div>
+${a.maquina}<br>${a.descripcion}
+<button onclick="conv(${a.row})">OT</button>
+<button onclick="del(${a.row})">X</button>
 </div>`;
 });
 }
 
-/* ================= OT DIRECTO ================= */
 function irOT(){
-
-localStorage.tmp = JSON.stringify({
+localStorage.tmp=JSON.stringify({
 maq:maq.value,
 proy:proy.value,
 tipo:tipo.value,
 desc:desc.value
 });
-
 location="ot.html";
 }
 
-/* ================= ACCIONES ================= */
-async function convertir(row){
-
-await fetch(`${API}?action=convertirAviso&row=${row}`,{
-method:"GET",
-mode:"cors",
-redirect:"follow"
-});
-
-location="ot.html?row="+row;
+async function conv(r){
+await fetch(`${API}?action=convertirAviso&row=${r}`);
+location=`ot.html?row=${r}`;
 }
 
-async function rechazar(row){
-
-await fetch(`${API}?action=rechazarAviso&row=${row}&user=${localStorage.user}`,{
-method:"GET",
-mode:"cors",
-redirect:"follow"
-});
-
+async function del(r){
+await fetch(`${API}?action=rechazarAviso&row=${r}&user=${localStorage.user}`);
 loadAvisos();
 }
-
-function logout(){
-localStorage.clear();
-location.reload();
-}
-
 </script>
 
 </body>
