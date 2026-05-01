@@ -1,64 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body{font-family:Arial;margin:0;background:url("op.png") center/cover fixed;}
-.wrap{background:rgba(255,255,255,0.95);min-height:100vh;padding:15px;}
-.box{max-width:500px;margin:auto;}
-input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;font-weight:bold;}
-.aviso{background:#2e7d32;color:white;}
-.ot{background:#1976d2;color:white;}
-.del{background:#616161;color:white;}
+body{
+margin:0;
+font-family:Arial;
+background:url("op.png") center/cover no-repeat fixed;
+}
+
+.overlay{
+background:rgba(255,255,255,0.94);
+min-height:100vh;
+padding:15px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+}
+
+/* LOGIN */
+#loginBox{
+background:white;
+padding:20px;
+border-radius:12px;
+margin-top:40px;
+}
+
+/* INPUTS */
+input,select,textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:8px;
+border:1px solid #ccc;
+box-sizing:border-box;
+}
+
+/* BOTONES */
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+}
+
+.btn-aviso{background:#2e7d32;color:white;}
+.btn-ot{background:#1976d2;color:white;}
+.btn-del{background:#616161;color:white;}
+
+.logout{
+width:auto;
+background:#d32f2f;
+color:white;
+padding:6px 10px;
+border-radius:6px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.card{
+background:white;
+padding:10px;
+margin-top:10px;
+border-radius:10px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
-<div class="box">
+<div class="overlay">
+<div class="container">
 
-<div id="login">
+<!-- LOGIN -->
+<div id="loginBox">
+<h2>Login</h2>
+
 <input id="user" placeholder="Usuario">
 <input id="pass" type="password" placeholder="Password">
+
 <button onclick="login()">Entrar</button>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none">
 
+<div class="header">
+<h3>Gestión OT</h3>
+<button class="logout" onclick="logout()">Salir</button>
+</div>
+
+<label>Máquina</label>
 <select id="maq"></select>
+
+<label>Proyecto</label>
 <select id="proy"></select>
+
+<label>Tipo avería</label>
 <select id="tipo"></select>
+
+<label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<button class="aviso" onclick="crearAviso()">Aviso</button>
-<button class="ot" onclick="irOT()">OT</button>
+<button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
+<button class="btn-ot" onclick="irOT()">Generar OT</button>
+
+<hr>
 
 <div id="avisos"></div>
 
 </div>
+
 </div>
 </div>
 
 <script>
-const API="https://script.google.com/macros/s/AKfycbyGuXys9T1o6vfBHU2WP8wmOSl5kx3zruwQSU0X0J3MrFnkKAVjpdSij1qPB_3q-oEz/exec";
 
-<!-- SOLO CAMBIO LOGIN (IMPORTANTE) -->
+const API="https://script.google.com/macros/s/AKfycbybqjljMrf5r3oRViGn1-XW8WVXp3ujk7Zs6u_1UgyTwMs0K3O-Iw5qiawHuigfaE-a/exec";
+
+/* 🔐 AUTOLOGIN */
+window.onload=()=>{
+if(localStorage.user){
+loginAuto();
+}
+};
 
 async function login(){
 
-const params = new URLSearchParams();
-params.append("action","login");
-params.append("user",user.value);
-params.append("pass",pass.value);
-
-/* 🔥 usamos POST también para login */
-const r = await fetch(API,{
-method:"POST",
-body:params
-});
-
+const r = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
 const d = await r.json();
 
 if(!d.ok){
@@ -69,26 +147,40 @@ return;
 localStorage.user=user.value;
 localStorage.emisor=d.emisor;
 
-login.style.display="none";
-app.style.display="block";
-
-load();
+initApp();
 }
 
-async function load(){
-const r=await fetch(`${API}?action=listas`);
-const d=await r.json();
+async function loginAuto(){
+const r = await fetch(`${API}?action=login&user=${localStorage.user}&pass=${localStorage.pass||""}`);
+const d = await r.json();
 
-maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`);
-proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`);
-tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`);
+if(d.ok){
+initApp();
+}
+}
 
+function initApp(){
+loginBox.style.display="none";
+app.style.display="block";
+loadLists();
 loadAvisos();
 }
 
+/* LISTAS */
+async function loadLists(){
+const r = await fetch(`${API}?action=listas`);
+const d = await r.json();
+
+maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
+proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
+tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
+}
+
+/* AVISO */
 async function crearAviso(){
 
 const p=new URLSearchParams();
+
 p.append("action","crearAviso");
 p.append("usuario",localStorage.user);
 p.append("maquina",maq.value);
@@ -102,17 +194,20 @@ desc.value="";
 loadAvisos();
 }
 
+/* AVISOS */
 async function loadAvisos(){
-const r=await fetch(`${API}?action=avisos`);
-const d=await r.json();
+
+const r = await fetch(`${API}?action=avisos`);
+const d = await r.json();
 
 avisos.innerHTML="";
+
 d.forEach(a=>{
 avisos.innerHTML+=`
-<div>
-${a.maquina}<br>${a.descripcion}
-<button onclick="conv(${a.row})">OT</button>
-<button onclick="del(${a.row})">X</button>
+<div class="card">
+<b>${a.maquina}</b><br>${a.descripcion}
+<button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
+<button class="btn-del" onclick="rechazar(${a.row})">Eliminar aviso</button>
 </div>`;
 });
 }
@@ -127,15 +222,21 @@ desc:desc.value
 location="ot.html";
 }
 
-async function conv(r){
+async function convertir(r){
 await fetch(`${API}?action=convertirAviso&row=${r}`);
 location=`ot.html?row=${r}`;
 }
 
-async function del(r){
+async function rechazar(r){
 await fetch(`${API}?action=rechazarAviso&row=${r}&user=${localStorage.user}`);
 loadAvisos();
 }
+
+function logout(){
+localStorage.clear();
+location.reload();
+}
+
 </script>
 
 </body>

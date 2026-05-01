@@ -1,99 +1,144 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0;}
-.box{max-width:500px;margin:auto;background:white;padding:15px;}
-input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:8px;border:1px solid #ccc;}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;}
+body{
+margin:0;
+font-family:Arial;
+background:url("op.png") center/cover no-repeat fixed;
+}
+
+.overlay{
+background:rgba(255,255,255,0.94);
+min-height:100vh;
+padding:15px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+background:white;
+padding:15px;
+border-radius:12px;
+}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:8px;
+border:1px solid #ccc;
+box-sizing:border-box;
+}
+
+.row{
+display:flex;
+gap:5px;
+}
+
+.row input{
+flex:1;
+}
+
+.qtt{
+flex:0.3;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:10px;
+font-weight:bold;
+}
+
+.add{background:#1976d2;color:white;}
+.save{background:#2e7d32;color:white;}
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="overlay">
+<div class="container">
+
+<h2>Orden de Trabajo</h2>
 
 <label>Hora</label>
 <select id="hora"></select>
 
 <label>Máquina</label>
-<input id="maq">
+<select id="maq"></select>
 
 <label>Proyecto</label>
-<input id="proy">
+<select id="proy"></select>
 
-<label>Código avería</label>
-<input id="tipo">
+<label>Avería</label>
+<select id="tipo"></select>
 
-<label>Descripción crear</label>
+<label>Descripción</label>
 <textarea id="desc"></textarea>
 
-<label>Estado OT</label>
+<label>Estado</label>
 <select id="estado">
 <option>ABIERTA</option>
 <option>CERRADA</option>
 </select>
 
-<label>Emisor OT</label>
+<label>Emisor</label>
 <input id="emisor">
 
-<label>Operario 1</label>
-<input id="op1">
-<label>Tiempo 1</label>
-<input id="t1">
+<div id="ops"></div>
+<button class="add" onclick="addOp()">+ Operario</button>
 
-<label>Material 1</label>
-<input id="mat1">
-<label>Material 2</label>
-<input id="mat2">
-<label>Material 3</label>
-<input id="mat3">
-<label>Material 4</label>
-<input id="mat4">
+<div id="mats"></div>
+<button class="add" onclick="addMat()">+ Material</button>
 
 <label>Tiempo intervención</label>
 <input id="tint">
 
-<label>Qtt1</label>
-<input id="qtt1">
-
-<label>Descripción cerrar</label>
+<label>Descripción cierre</label>
 <textarea id="cerrar"></textarea>
 
-<label>Planificar acción</label>
-<select id="plan">
+<label>Planificar</label>
+<select id="plan" onchange="togglePlan()">
 <option>NO</option>
 <option>SI</option>
 </select>
 
+<div id="planBox" style="display:none">
 <label>Descripción planificación</label>
 <textarea id="planDesc"></textarea>
+</div>
 
-<label>Qtt2</label>
-<input id="qtt2">
-<label>Qtt3</label>
-<input id="qtt3">
-<label>Qtt4</label>
-<input id="qtt4">
+<button class="save" onclick="guardar()">Guardar OT</button>
 
-<button onclick="guardar()">Guardar OT</button>
-
+</div>
 </div>
 
 <script>
 
 const API="https://script.google.com/macros/s/AKfycbybqjljMrf5r3oRViGn1-XW8WVXp3ujk7Zs6u_1UgyTwMs0K3O-Iw5qiawHuigfaE-a/exec";
 
+let opCount=0;
+let matCount=0;
+
 window.onload=async()=>{
 
 emisor.value=localStorage.emisor;
-op1.value=localStorage.emisor;
+addOp();
+addMat();
 
 const r=await fetch(`${API}?action=listas`);
 const d=await r.json();
 
-hora.innerHTML=d.HORA.map(x=>`<option>${x}</option>`);
+hora.innerHTML=d.HORA.map(x=>`<option>${x}</option>`).join("");
+maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
+proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
+tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
 
 const row=new URLSearchParams(location.search).get("row");
 
@@ -116,24 +161,67 @@ desc.value=t.desc;
 }
 };
 
+/* OPERARIOS */
+function addOp(){
+if(opCount>=6) return;
+opCount++;
+
+ops.innerHTML+=`
+<div class="row">
+<input id="op${opCount}" placeholder="Operario ${opCount}">
+<input id="t${opCount}" placeholder="Tiempo ${opCount}">
+</div>`;
+}
+
+/* MATERIALES */
+function addMat(){
+if(matCount>=4) return;
+matCount++;
+
+mats.innerHTML+=`
+<div class="row">
+<input id="mat${matCount}" placeholder="Material ${matCount}">
+<input id="qtt${matCount}" class="qtt" placeholder="Qtt">
+</div>`;
+}
+
+/* PLAN */
+function togglePlan(){
+planBox.style.display = plan.value==="SI" ? "block":"none";
+}
+
+/* GUARDAR */
 async function guardar(){
 
 const p=new URLSearchParams();
 
-[
-"hora","estado","emisor","maquina","proyecto","tipo","descripcion",
-"cerrar","plan","planDesc",
-"op1","t1",
-"mat1","mat2","mat3","mat4",
-"tint",
-"qtt1","qtt2","qtt3","qtt4"
-].forEach(id=>p.append(id,document.getElementById(id)?.value||""));
-
 p.append("action","guardarOT");
+p.append("hora",hora.value);
+p.append("estado",estado.value);
+p.append("emisor",emisor.value);
+p.append("maquina",maq.value);
+p.append("proyecto",proy.value);
+p.append("tipo",tipo.value);
+p.append("descripcion",desc.value);
+p.append("cerrar",cerrar.value);
+p.append("plan",plan.value);
+p.append("planDesc",planDesc.value);
+p.append("tint",tint.value);
+
+for(let i=1;i<=opCount;i++){
+p.append("op"+i,document.getElementById("op"+i).value);
+p.append("t"+i,document.getElementById("t"+i).value);
+}
+
+for(let i=1;i<=matCount;i++){
+p.append("mat"+i,document.getElementById("mat"+i).value);
+p.append("qtt"+i,document.getElementById("qtt"+i).value);
+}
 
 await fetch(API,{method:"POST",body:p});
 
-alert("OT guardada");
+/* 🔥 VUELVE CON SESIÓN */
+location="index.html";
 }
 
 </script>
