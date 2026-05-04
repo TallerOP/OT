@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión de Avisos OP Mobility Pedrola</title>
+<title>Gestión de avisos OP Mobility Pedrola</title>
 
 <style>
 body{
@@ -28,7 +28,7 @@ body{
   border-radius:10px;
 }
 
-input, button{
+input, select, button{
   width:100%;
   padding:10px;
   margin:6px 0;
@@ -71,7 +71,6 @@ button:hover{
 .red{ background:#d9534f; }
 .green{ background:#5cb85c; }
 
-/* DEBUG */
 #debugBox{
   position:fixed;
   bottom:0;
@@ -96,7 +95,7 @@ button:hover{
 
 <!-- LOGIN -->
 <div id="loginBox" class="container">
-  <h2>Login ERP</h2>
+  <h2>Bienvenido al servicio de gestión de avisos</h2>
   <input id="user" placeholder="Usuario">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Entrar</button>
@@ -110,28 +109,21 @@ button:hover{
   <button onclick="logout()">Salir</button>
 </div>
 
-<!-- AVISO -->
+<!-- ================= FORM UNIFICADO ================= -->
 <div class="container">
-<h3>Crear Aviso</h3>
+<h3>Generar Aviso / OT</h3>
 
 <div class="grid">
-  <input id="maquina" placeholder="Máquina">
-  <input id="proyecto" placeholder="Proyecto">
+  <select id="maquina"></select>
+  <select id="proyecto"></select>
 </div>
 
-<input id="tipo" placeholder="Tipo avería">
+<select id="tipo"></select>
+
 <input id="desc" placeholder="Descripción">
-
-<button onclick="crearAviso()">Generar Aviso</button>
-</div>
-
-<!-- OT -->
-<div class="container">
-<h3>Crear OT</h3>
 
 <div class="grid">
   <input id="emisor" placeholder="Emisor OT">
-  <input id="maquinaOT" placeholder="Máquina">
 </div>
 
 <div class="grid">
@@ -139,20 +131,20 @@ button:hover{
   <input id="t1" placeholder="Tiempo 1">
 </div>
 
-<input id="proyectoOT" placeholder="Proyecto">
-<input id="descOT" placeholder="Descripción">
+<button onclick="crearAviso()">Generar Aviso</button>
 
-<button onclick="crearOT()">Crear OT</button>
+<button id="btnOT" onclick="crearOT()">Generar OT</button>
+
 </div>
 
-<!-- AVISOS -->
+<!-- ================= AVISOS ================= -->
 <div class="container">
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 </div>
 
-<!-- OTs -->
-<div class="container">
+<!-- ================= OTs ================= -->
+<div id="otPanel" class="container">
 <h3>OTs pendientes exportación</h3>
 <div id="ots"></div>
 </div>
@@ -176,39 +168,16 @@ function logDebug(msg){
 // ================= LOGIN =================
 function login(){
 
-  logDebug("CLICK LOGIN");
-
   const u = document.getElementById("user").value;
   const p = document.getElementById("pass").value;
 
-  logDebug("User: " + u);
-
-  const url = `${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
-
-  logDebug("URL: " + url);
-
-  fetch(url)
-    .then(r => {
-      logDebug("HTTP OK");
-      return r.text();
-    })
-    .then(t => {
-
-      logDebug("RESP: " + t);
-
-      if(!t){
-        logDebug("RESP VACÍA");
-        alert("Sin respuesta servidor");
-        return;
-      }
+  fetch(`${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`)
+    .then(r=>r.text())
+    .then(t=>{
 
       const parts = t.split("|");
 
-      logDebug("PARSE: " + JSON.stringify(parts));
-
       if(parts[0] === "OK"){
-
-        logDebug("LOGIN OK");
 
         currentUser = u;
         role = parts[2] || "NORMAL";
@@ -222,17 +191,14 @@ function login(){
         document.getElementById("welcome").innerText =
           "Usuario: " + u + " | Rol: " + role;
 
+        applyRoleRules();
         loadData();
+        loadLists();
 
       } else {
-        logDebug("LOGIN FAIL");
         alert("Login incorrecto");
       }
 
-    })
-    .catch(err => {
-      logDebug("ERROR FETCH: " + err.message);
-      alert("Error conexión");
     });
 
 }
@@ -243,67 +209,89 @@ function logout(){
   location.reload();
 }
 
-// ================= AUTOLOGIN =================
-window.onload = function(){
+// ================= ROLES =================
+function applyRoleRules(){
 
-  const u = localStorage.getItem("user");
-  const r = localStorage.getItem("role");
-
-  if(u){
-    currentUser = u;
-    role = r;
-
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-
-    document.getElementById("welcome").innerText =
-      "Usuario: " + u + " | Rol: " + r;
-
-    loadData();
+  if(role === "Produccion"){
+    document.getElementById("btnOT").style.display = "none";
+    document.getElementById("otPanel").style.display = "none";
   }
 
-};
+}
 
-// ================= CREAR AVISO =================
+// ================= LISTAS DROPDOWN =================
+function loadLists(){
+
+  fetch(BASE_URL+"?action=getListas")
+  .then(r=>r.text())
+  .then(t=>{
+
+    const rows = t.split("\n");
+
+    let maq = document.getElementById("maquina");
+    let pro = document.getElementById("proyecto");
+    let tip = document.getElementById("tipo");
+
+    maq.innerHTML = "";
+    pro.innerHTML = "";
+    tip.innerHTML = "";
+
+    rows.forEach(r=>{
+
+      if(!r) return;
+
+      const f = r.split("|");
+
+      if(f[0] === "MAQUINA"){
+        maq.innerHTML += `<option>${f[1]}</option>`;
+      }
+
+      if(f[0] === "PROYECTO"){
+        pro.innerHTML += `<option>${f[1]}</option>`;
+      }
+
+      if(f[0] === "AVERIA"){
+        tip.innerHTML += `<option>${f[1]}</option>`;
+      }
+
+    });
+
+  });
+
+}
+
+// ================= AVISO =================
 function crearAviso(){
 
   const data = new URLSearchParams();
 
   data.append("action","crearAviso");
   data.append("usuario",currentUser);
-  data.append("maquina",document.getElementById("maquina").value);
-  data.append("proyecto",document.getElementById("proyecto").value);
-  data.append("tipo",document.getElementById("tipo").value);
-  data.append("descripcion",document.getElementById("desc").value);
+  data.append("maquina",maquina.value);
+  data.append("proyecto",proyecto.value);
+  data.append("tipo",tipo.value);
+  data.append("descripcion",desc.value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-    .then(r=>r.text())
-    .then(t=>{
-      logDebug("AVISO: " + t);
-      loadData();
-    });
+    .then(()=>loadData());
 
 }
 
-// ================= CREAR OT =================
+// ================= OT =================
 function crearOT(){
 
   const data = new URLSearchParams();
 
   data.append("action","crearOT");
-  data.append("emisor",document.getElementById("emisor").value);
-  data.append("maquina",document.getElementById("maquinaOT").value);
-  data.append("op1",document.getElementById("op1").value);
-  data.append("t1",document.getElementById("t1").value);
-  data.append("proyecto",document.getElementById("proyectoOT").value);
-  data.append("descripcion",document.getElementById("descOT").value);
+  data.append("emisor",emisor.value);
+  data.append("maquina",maquina.value);
+  data.append("op1",op1.value);
+  data.append("t1",t1.value);
+  data.append("proyecto",proyecto.value);
+  data.append("descripcion",desc.value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-    .then(r=>r.text())
-    .then(t=>{
-      logDebug("OT: " + t);
-      loadData();
-    });
+    .then(()=>loadData());
 
 }
 
@@ -320,8 +308,6 @@ function loadAvisos(){
   .then(r=>r.text())
   .then(t=>{
 
-    logDebug("AVISOS OK");
-
     const div = document.getElementById("avisos");
     div.innerHTML = "";
 
@@ -336,6 +322,8 @@ function loadAvisos(){
       div.innerHTML += `
       <div class="card">
         <b>${f[3]}</b> - ${f[5]}
+        <br>
+        Usuario: ${f[2]} | Fecha: ${f[1]}
         <br><br>
 
         ${role !== "Produccion" ? `
@@ -356,8 +344,6 @@ function loadOTs(){
   fetch(BASE_URL+"?action=getOTs")
   .then(r=>r.text())
   .then(t=>{
-
-    logDebug("OTs OK");
 
     const div = document.getElementById("ots");
     div.innerHTML = "";
@@ -380,7 +366,7 @@ function loadOTs(){
 
 }
 
-// ================= AVISOS ACTIONS =================
+// ================= ACTIONS =================
 function convertirAviso(row){
   fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
   .then(()=>loadData());
