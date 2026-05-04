@@ -71,20 +71,38 @@ button:hover{
 .red{ background:#d9534f; }
 .green{ background:#5cb85c; }
 
+/* DEBUG */
+#debugBox{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  max-height:180px;
+  overflow:auto;
+  background:#000;
+  color:#00ff00;
+  font-size:12px;
+  padding:8px;
+  display:none;
+  z-index:99999;
+}
 </style>
 </head>
 
 <body>
 
-<!-- ================= LOGIN ================= -->
+<!-- DEBUG -->
+<div id="debugBox"></div>
+
+<!-- LOGIN -->
 <div id="loginBox" class="container">
-  <h2>Inicio de sesión</h2>
+  <h2>Login ERP</h2>
   <input id="user" placeholder="Usuario">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Entrar</button>
 </div>
 
-<!-- ================= APP ================= -->
+<!-- APP -->
 <div id="app" class="hidden">
 
 <div class="topbar">
@@ -92,7 +110,7 @@ button:hover{
   <button onclick="logout()">Salir</button>
 </div>
 
-<!-- ================= CREAR AVISO ================= -->
+<!-- AVISO -->
 <div class="container">
 <h3>Crear Aviso</h3>
 
@@ -107,8 +125,8 @@ button:hover{
 <button onclick="crearAviso()">Generar Aviso</button>
 </div>
 
-<!-- ================= CREAR OT ================= -->
-<div class="container" id="otBox">
+<!-- OT -->
+<div class="container">
 <h3>Crear OT</h3>
 
 <div class="grid">
@@ -127,13 +145,13 @@ button:hover{
 <button onclick="crearOT()">Crear OT</button>
 </div>
 
-<!-- ================= AVISOS ================= -->
+<!-- AVISOS -->
 <div class="container">
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 </div>
 
-<!-- ================= OTS ================= -->
+<!-- OTs -->
 <div class="container">
 <h3>OTs pendientes exportación</h3>
 <div id="ots"></div>
@@ -148,23 +166,49 @@ const BASE_URL = "https://script.google.com/macros/s/AKfycbzc4rVg7WTutyAM4BzSQXh
 let currentUser = null;
 let role = null;
 
-# =====================================================
-# LOGIN
-# =====================================================
+// ================= DEBUG =================
+function logDebug(msg){
+  const box = document.getElementById("debugBox");
+  box.style.display = "block";
+  box.innerHTML += "<div>> " + msg + "</div>";
+}
+
+// ================= LOGIN =================
 function login(){
+
+  logDebug("CLICK LOGIN");
 
   const u = document.getElementById("user").value;
   const p = document.getElementById("pass").value;
 
-  fetch(`${BASE_URL}?action=login&user=${u}&pass=${p}`)
-    .then(r => r.text())
+  logDebug("User: " + u);
+
+  const url = `${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`;
+
+  logDebug("URL: " + url);
+
+  fetch(url)
+    .then(r => {
+      logDebug("HTTP OK");
+      return r.text();
+    })
     .then(t => {
 
-      console.log("LOGIN:", t);
+      logDebug("RESP: " + t);
+
+      if(!t){
+        logDebug("RESP VACÍA");
+        alert("Sin respuesta servidor");
+        return;
+      }
 
       const parts = t.split("|");
 
+      logDebug("PARSE: " + JSON.stringify(parts));
+
       if(parts[0] === "OK"){
+
+        logDebug("LOGIN OK");
 
         currentUser = u;
         role = parts[2] || "NORMAL";
@@ -181,24 +225,25 @@ function login(){
         loadData();
 
       } else {
+        logDebug("LOGIN FAIL");
         alert("Login incorrecto");
       }
 
+    })
+    .catch(err => {
+      logDebug("ERROR FETCH: " + err.message);
+      alert("Error conexión");
     });
 
 }
 
-# =====================================================
-# LOGOUT
-# =====================================================
+// ================= LOGOUT =================
 function logout(){
   localStorage.clear();
   location.reload();
 }
 
-# =====================================================
-# AUTOLOGIN
-# =====================================================
+// ================= AUTOLOGIN =================
 window.onload = function(){
 
   const u = localStorage.getItem("user");
@@ -219,9 +264,7 @@ window.onload = function(){
 
 };
 
-# =====================================================
-# CREAR AVISO
-# =====================================================
+// ================= CREAR AVISO =================
 function crearAviso(){
 
   const data = new URLSearchParams();
@@ -234,13 +277,15 @@ function crearAviso(){
   data.append("descripcion",document.getElementById("desc").value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-    .then(()=>loadData());
+    .then(r=>r.text())
+    .then(t=>{
+      logDebug("AVISO: " + t);
+      loadData();
+    });
 
 }
 
-# =====================================================
-# CREAR OT
-# =====================================================
+// ================= CREAR OT =================
 function crearOT(){
 
   const data = new URLSearchParams();
@@ -254,26 +299,28 @@ function crearOT(){
   data.append("descripcion",document.getElementById("descOT").value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-    .then(()=>loadData());
+    .then(r=>r.text())
+    .then(t=>{
+      logDebug("OT: " + t);
+      loadData();
+    });
 
 }
 
-# =====================================================
-# CARGA GENERAL
-# =====================================================
+// ================= LOAD =================
 function loadData(){
   loadAvisos();
   loadOTs();
 }
 
-# =====================================================
-# AVISOS
-# =====================================================
+// ================= AVISOS =================
 function loadAvisos(){
 
   fetch(BASE_URL+"?action=getAvisos")
   .then(r=>r.text())
   .then(t=>{
+
+    logDebug("AVISOS OK");
 
     const div = document.getElementById("avisos");
     div.innerHTML = "";
@@ -289,7 +336,6 @@ function loadAvisos(){
       div.innerHTML += `
       <div class="card">
         <b>${f[3]}</b> - ${f[5]}
-
         <br><br>
 
         ${role !== "Produccion" ? `
@@ -304,14 +350,14 @@ function loadAvisos(){
 
 }
 
-# =====================================================
-# OTs
-# =====================================================
+// ================= OTs =================
 function loadOTs(){
 
   fetch(BASE_URL+"?action=getOTs")
   .then(r=>r.text())
   .then(t=>{
+
+    logDebug("OTs OK");
 
     const div = document.getElementById("ots");
     div.innerHTML = "";
@@ -334,24 +380,15 @@ function loadOTs(){
 
 }
 
-# =====================================================
-# CONVERTIR AVISO
-# =====================================================
+// ================= AVISOS ACTIONS =================
 function convertirAviso(row){
-
   fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
   .then(()=>loadData());
-
 }
 
-# =====================================================
-# ELIMINAR AVISO
-# =====================================================
 function eliminarAviso(row){
-
   fetch(BASE_URL+"?action=rechazarAviso&row="+row+"&usuario="+currentUser)
   .then(()=>loadData());
-
 }
 
 </script>
