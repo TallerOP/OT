@@ -1,240 +1,334 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERP Industrial</title>
 
 <style>
 body{
-margin:0;
-font-family:Arial;
-background:url("op.png") center/cover no-repeat fixed;
+  margin:0;
+  font-family:Arial;
+  background:#f4f4f4;
 }
 
-.overlay{
-background:rgba(255,255,255,0.94);
-min-height:100vh;
-padding:15px;
+.topbar{
+  background:#2d89ef;
+  color:white;
+  padding:10px;
+  display:flex;
+  justify-content:space-between;
 }
 
 .container{
-max-width:500px;
-margin:auto;
+  max-width:1000px;
+  margin:20px auto;
+  background:white;
+  padding:15px;
+  border-radius:10px;
 }
 
-/* LOGIN */
-#loginBox{
-background:white;
-padding:20px;
-border-radius:12px;
-margin-top:40px;
+input, select, button{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  box-sizing:border-box;
 }
 
-/* INPUTS */
-input,select,textarea{
-width:100%;
-padding:10px;
-margin-top:5px;
-border-radius:8px;
-border:1px solid #ccc;
-box-sizing:border-box;
-}
-
-/* BOTONES */
 button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:10px;
-font-weight:bold;
+  background:#2d89ef;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
 }
 
-.btn-aviso{background:#2e7d32;color:white;}
-.btn-ot{background:#1976d2;color:white;}
-.btn-del{background:#616161;color:white;}
-
-.logout{
-width:auto;
-background:#d32f2f;
-color:white;
-padding:6px 10px;
-border-radius:6px;
+button:hover{
+  background:#1b5fa7;
 }
 
-.header{
-display:flex;
-justify-content:space-between;
-align-items:center;
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
 }
 
 .card{
-background:white;
-padding:10px;
-margin-top:10px;
-border-radius:10px;
+  border:1px solid #ddd;
+  padding:10px;
+  margin:10px 0;
+  border-radius:8px;
 }
+
+.hidden{ display:none; }
+
+.smallbtn{
+  width:auto;
+  padding:6px 10px;
+  margin-right:5px;
+}
+
+.red{ background:#d9534f; }
+.green{ background:#5cb85c; }
+.orange{ background:#f0ad4e; }
+
 </style>
 </head>
 
 <body>
 
-<div class="overlay">
+<!-- ================= LOGIN ================= -->
+<div id="loginBox" class="container">
+  <h2>Login ERP</h2>
+  <input id="user" placeholder="Usuario">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Entrar</button>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hidden">
+
+<div class="topbar">
+  <div id="welcome"></div>
+  <button onclick="logout()">Salir</button>
+</div>
+
 <div class="container">
 
-<!-- LOGIN -->
-<div id="loginBox">
-<h2>Login</h2>
+<!-- ================= AVISO ================= -->
+<h3>Crear Aviso</h3>
 
-<input id="user" placeholder="Usuario">
-<input id="pass" type="password" placeholder="Password">
-
-<button onclick="login()">Entrar</button>
+<div class="grid">
+  <input id="maquina" placeholder="Máquina">
+  <input id="proyecto" placeholder="Proyecto">
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none">
+<input id="tipo" placeholder="Tipo avería">
+<input id="desc" placeholder="Descripción">
 
-<div class="header">
-<h3>Gestión OT</h3>
-<button class="logout" onclick="logout()">Salir</button>
+<button onclick="crearAviso()">Generar Aviso</button>
+
 </div>
 
-<label>Máquina</label>
-<select id="maq"></select>
+<!-- ================= OT ================= -->
+<div class="container" id="otBox">
+<h3>Generar OT</h3>
 
-<label>Proyecto</label>
-<select id="proy"></select>
+<div class="grid">
+  <input id="emisor" placeholder="Emisor OT">
+  <input id="maquinaOT" placeholder="Máquina">
+</div>
 
-<label>Tipo avería</label>
-<select id="tipo"></select>
+<div class="grid">
+  <input id="op1" placeholder="Operario 1">
+  <input id="t1" placeholder="Tiempo 1">
+</div>
 
-<label>Descripción</label>
-<textarea id="desc"></textarea>
+<input id="proyectoOT" placeholder="Proyecto">
+<input id="descOT" placeholder="Descripción">
 
-<button class="btn-aviso" onclick="crearAviso()">Generar Aviso</button>
-<button class="btn-ot" onclick="irOT()">Generar OT</button>
+<button onclick="crearOT()">Crear OT</button>
 
-<hr>
+</div>
 
+<!-- ================= AVISOS PENDIENTES ================= -->
+<div class="container">
+<h3>Avisos pendientes</h3>
 <div id="avisos"></div>
-
 </div>
 
+<!-- ================= OTS PENDIENTES ================= -->
+<div class="container">
+<h3>OTs pendientes exportación</h3>
+<div id="ots"></div>
 </div>
+
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbw7tFxSsf0KzYBkMMbR--G_ijNMGH3in4KMrGitYASRBUAlSFCfMKh8kZZRhRPB7sff/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbw7tFxSsf0KzYBkMMbR--G_ijNMGH3in4KMrGitYASRBUAlSFCfMKh8kZZRhRPB7sff/exec";
 
-/* 🔐 AUTOLOGIN */
-window.onload=()=>{
-if(localStorage.user){
-loginAuto();
-}
-};
+let currentUser = null;
+let role = null;
 
-async function login(){
+# =====================================================
+# LOGIN
+# =====================================================
+function login(){
 
-const r = await fetch(`${API}?action=login&user=${user.value}&pass=${pass.value}`);
-const d = await r.json();
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
 
-if(!d.ok){
-alert("Login incorrecto");
-return;
-}
+  fetch(`${BASE_URL}?action=login&user=${u}&pass=${p}`)
+  .then(r=>r.text())
+  .then(t=>{
 
-localStorage.user=user.value;
-localStorage.emisor=d.emisor;
+    if(t.includes("OK")){
 
-initApp();
-}
+      currentUser = u;
+      localStorage.setItem("user",u);
 
-async function loginAuto(){
-const r = await fetch(`${API}?action=login&user=${localStorage.user}&pass=${localStorage.pass||""}`);
-const d = await r.json();
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
 
-if(d.ok){
-initApp();
-}
-}
+      document.getElementById("welcome").innerText = "Usuario: " + u;
 
-function initApp(){
-loginBox.style.display="none";
-app.style.display="block";
-loadLists();
-loadAvisos();
+      loadData();
+
+    } else {
+      alert("Login incorrecto");
+    }
+  });
 }
 
-/* LISTAS */
-async function loadLists(){
-const r = await fetch(`${API}?action=listas`);
-const d = await r.json();
-
-maq.innerHTML=d.MAQUINA.map(x=>`<option>${x}</option>`).join("");
-proy.innerHTML=d.PROYECTO.map(x=>`<option>${x}</option>`).join("");
-tipo.innerHTML=d.AVERIA.map(x=>`<option>${x}</option>`).join("");
-}
-
-/* AVISO */
-async function crearAviso(){
-
-const p=new URLSearchParams();
-
-p.append("action","crearAviso");
-p.append("usuario",localStorage.user);
-p.append("maquina",maq.value);
-p.append("proyecto",proy.value);
-p.append("tipo",tipo.value);
-p.append("descripcion",desc.value);
-
-await fetch(API,{method:"POST",body:p});
-
-desc.value="";
-loadAvisos();
-}
-
-/* AVISOS */
-async function loadAvisos(){
-
-const r = await fetch(`${API}?action=avisos`);
-const d = await r.json();
-
-avisos.innerHTML="";
-
-d.forEach(a=>{
-avisos.innerHTML+=`
-<div class="card">
-<b>${a.maquina}</b><br>${a.descripcion}
-<button class="btn-ot" onclick="convertir(${a.row})">Convertir a OT</button>
-<button class="btn-del" onclick="rechazar(${a.row})">Eliminar aviso</button>
-</div>`;
-});
-}
-
-function irOT(){
-localStorage.tmp=JSON.stringify({
-maq:maq.value,
-proy:proy.value,
-tipo:tipo.value,
-desc:desc.value
-});
-location="ot.html";
-}
-
-async function convertir(r){
-await fetch(`${API}?action=convertirAviso&row=${r}`);
-location=`ot.html?row=${r}`;
-}
-
-async function rechazar(r){
-await fetch(`${API}?action=rechazarAviso&row=${r}&user=${localStorage.user}`);
-loadAvisos();
-}
-
+# =====================================================
+# LOGOUT
+# =====================================================
 function logout(){
-localStorage.clear();
-location.reload();
+  localStorage.removeItem("user");
+  location.reload();
+}
+
+# =====================================================
+# CREAR AVISO
+# =====================================================
+function crearAviso(){
+
+  const data = new URLSearchParams();
+
+  data.append("action","crearAviso");
+  data.append("usuario",currentUser);
+  data.append("maquina",document.getElementById("maquina").value);
+  data.append("proyecto",document.getElementById("proyecto").value);
+  data.append("tipo",document.getElementById("tipo").value);
+  data.append("descripcion",document.getElementById("desc").value);
+
+  fetch(BASE_URL,{ method:"POST", body:data })
+  .then(r=>r.text())
+  .then(()=>loadData());
+
+}
+
+# =====================================================
+# CREAR OT
+# =====================================================
+function crearOT(){
+
+  const data = new URLSearchParams();
+
+  data.append("action","crearOT");
+  data.append("emisor",document.getElementById("emisor").value);
+  data.append("maquina",document.getElementById("maquinaOT").value);
+  data.append("op1",document.getElementById("op1").value);
+  data.append("t1",document.getElementById("t1").value);
+  data.append("proyecto",document.getElementById("proyectoOT").value);
+  data.append("descripcion",document.getElementById("descOT").value);
+
+  fetch(BASE_URL,{ method:"POST", body:data })
+  .then(r=>r.text())
+  .then(()=>loadData());
+
+}
+
+# =====================================================
+# CARGAR DATOS
+# =====================================================
+function loadData(){
+
+  loadAvisos();
+  loadOTs();
+
+}
+
+# =====================================================
+# AVISOS
+# =====================================================
+function loadAvisos(){
+
+  fetch(BASE_URL+"?action=getAvisos")
+  .then(r=>r.text())
+  .then(t=>{
+
+    const div = document.getElementById("avisos");
+    div.innerHTML = "";
+
+    if(!t) return;
+
+    const rows = t.split("\n");
+
+    rows.forEach((r,i)=>{
+
+      if(!r) return;
+
+      const f = r.split("|");
+
+      div.innerHTML += `
+      <div class="card">
+        <b>${f[3]}</b> - ${f[5]}
+
+        <br><br>
+
+        ${role !== "Produccion" ? `
+        <button class="smallbtn green" onclick="convertirAviso(${i+2})">Convertir OT</button>
+        ` : ""}
+
+        <button class="smallbtn red" onclick="eliminarAviso(${i+2})">Eliminar</button>
+      </div>`;
+    });
+
+  });
+
+}
+
+# =====================================================
+# OTs
+# =====================================================
+function loadOTs(){
+
+  fetch(BASE_URL+"?action=getOTs")
+  .then(r=>r.text())
+  .then(t=>{
+
+    const div = document.getElementById("ots");
+    div.innerHTML = "";
+
+    const rows = t.split("\n");
+
+    rows.forEach(r=>{
+
+      if(!r) return;
+
+      const f = r.split("|");
+
+      div.innerHTML += `
+      <div class="card">
+        OT: ${f[0]} - ${f[4]} - ${f[11]}
+      </div>`;
+    });
+
+  });
+
+}
+
+# =====================================================
+# CONVERTIR AVISO
+# =====================================================
+function convertirAviso(row){
+
+  fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
+  .then(()=>loadData());
+
+}
+
+# =====================================================
+# ELIMINAR AVISO (CON LOG EN BACKEND)
+# =====================================================
+function eliminarAviso(row){
+
+  fetch(BASE_URL+"?action=rechazarAviso&row="+row+"&usuario="+currentUser)
+  .then(()=>loadData());
+
 }
 
 </script>
