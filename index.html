@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión de avisos OP Mobility Pedrola</title>
+
+<title>Gestión de Avisos OP Mobility Pedrola</title>
 
 <style>
 body{
@@ -12,12 +13,11 @@ body{
   background:#f4f4f4;
 }
 
-.topbar{
+.header{
   background:#2d89ef;
   color:white;
-  padding:10px;
-  display:flex;
-  justify-content:space-between;
+  padding:12px;
+  font-size:18px;
 }
 
 .container{
@@ -40,7 +40,6 @@ button{
   color:white;
   border:none;
   border-radius:6px;
-  cursor:pointer;
 }
 
 button:hover{
@@ -68,15 +67,16 @@ button:hover{
   margin-right:5px;
 }
 
-.red{ background:#d9534f; }
 .green{ background:#5cb85c; }
+.red{ background:#d9534f; }
 
+/* DEBUG */
 #debugBox{
   position:fixed;
   bottom:0;
   left:0;
   right:0;
-  max-height:180px;
+  max-height:200px;
   overflow:auto;
   background:#000;
   color:#00ff00;
@@ -95,7 +95,9 @@ button:hover{
 
 <!-- LOGIN -->
 <div id="loginBox" class="container">
-  <h2>Bienvenido al servicio de gestión de avisos</h2>
+  <div class="header">Bienvenido al sistema de gestión de avisos</div>
+
+  <h3>Login</h3>
   <input id="user" placeholder="Usuario">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Entrar</button>
@@ -104,32 +106,20 @@ button:hover{
 <!-- APP -->
 <div id="app" class="hidden">
 
-<div class="topbar">
-  <div id="welcome"></div>
-  <button onclick="logout()">Salir</button>
+<div class="header">
+  Gestión de Avisos OP Mobility Pedrola
 </div>
 
-<!-- ================= FORM UNIFICADO ================= -->
 <div class="container">
+
 <h3>Generar Aviso / OT</h3>
 
-<div class="grid">
-  <select id="maquina"></select>
-  <select id="proyecto"></select>
-</div>
-
+<!-- DESPLEGABLES -->
+<select id="maquina"></select>
+<select id="proyecto"></select>
 <select id="tipo"></select>
 
 <input id="desc" placeholder="Descripción">
-
-<div class="grid">
-  <input id="emisor" placeholder="Emisor OT">
-</div>
-
-<div class="grid">
-  <input id="op1" placeholder="Operario 1">
-  <input id="t1" placeholder="Tiempo 1">
-</div>
 
 <button onclick="crearAviso()">Generar Aviso</button>
 
@@ -137,14 +127,12 @@ button:hover{
 
 </div>
 
-<!-- ================= AVISOS ================= -->
 <div class="container">
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 </div>
 
-<!-- ================= OTs ================= -->
-<div id="otPanel" class="container">
+<div class="container" id="otPanel">
 <h3>OTs pendientes exportación</h3>
 <div id="ots"></div>
 </div>
@@ -168,59 +156,53 @@ function logDebug(msg){
 // ================= LOGIN =================
 function login(){
 
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
+  logDebug("LOGIN CLICK");
 
-  fetch(`${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`)
-    .then(r=>r.text())
-    .then(t=>{
+  const u = user.value;
+  const p = pass.value;
 
-      const parts = t.split("|");
+  fetch(`${BASE_URL}?action=login&user=${u}&pass=${p}`)
+  .then(r=>r.text())
+  .then(t=>{
 
-      if(parts[0] === "OK"){
+    logDebug("RESP: " + t);
 
-        currentUser = u;
-        role = parts[2] || "NORMAL";
+    const parts = t.split("|");
 
-        localStorage.setItem("user", u);
-        localStorage.setItem("role", role);
+    if(parts[0] === "OK"){
 
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
+      currentUser = u;
+      role = parts[2];
 
-        document.getElementById("welcome").innerText =
-          "Usuario: " + u + " | Rol: " + role;
+      loginBox.classList.add("hidden");
+      app.classList.remove("hidden");
 
-        applyRoleRules();
-        loadData();
-        loadLists();
+      applyRoles();
+      loadData();
+      loadLists();
 
-      } else {
-        alert("Login incorrecto");
-      }
+    } else {
+      alert("Login incorrecto");
+    }
 
-    });
+  });
 
-}
-
-// ================= LOGOUT =================
-function logout(){
-  localStorage.clear();
-  location.reload();
 }
 
 // ================= ROLES =================
-function applyRoleRules(){
+function applyRoles(){
 
   if(role === "Produccion"){
-    document.getElementById("btnOT").style.display = "none";
-    document.getElementById("otPanel").style.display = "none";
+    btnOT.style.display = "none";
+    otPanel.style.display = "none";
   }
 
 }
 
-// ================= LISTAS DROPDOWN =================
+// ================= LISTAS =================
 function loadLists(){
+
+  logDebug("Cargando listas...");
 
   fetch(BASE_URL+"?action=getListas")
   .then(r=>r.text())
@@ -228,13 +210,9 @@ function loadLists(){
 
     const rows = t.split("\n");
 
-    let maq = document.getElementById("maquina");
-    let pro = document.getElementById("proyecto");
-    let tip = document.getElementById("tipo");
-
-    maq.innerHTML = "";
-    pro.innerHTML = "";
-    tip.innerHTML = "";
+    maquina.innerHTML = "";
+    proyecto.innerHTML = "";
+    tipo.innerHTML = "";
 
     rows.forEach(r=>{
 
@@ -242,19 +220,13 @@ function loadLists(){
 
       const f = r.split("|");
 
-      if(f[0] === "MAQUINA"){
-        maq.innerHTML += `<option>${f[1]}</option>`;
-      }
-
-      if(f[0] === "PROYECTO"){
-        pro.innerHTML += `<option>${f[1]}</option>`;
-      }
-
-      if(f[0] === "AVERIA"){
-        tip.innerHTML += `<option>${f[1]}</option>`;
-      }
+      if(f[0] === "MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0] === "PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0] === "AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
 
     });
+
+    logDebug("Listas cargadas");
 
   });
 
@@ -263,35 +235,46 @@ function loadLists(){
 // ================= AVISO =================
 function crearAviso(){
 
-  const data = new URLSearchParams();
+  logDebug("Crear aviso");
 
-  data.append("action","crearAviso");
-  data.append("usuario",currentUser);
-  data.append("maquina",maquina.value);
-  data.append("proyecto",proyecto.value);
-  data.append("tipo",tipo.value);
-  data.append("descripcion",desc.value);
-
-  fetch(BASE_URL,{ method:"POST", body:data })
-    .then(()=>loadData());
+  fetch(BASE_URL,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"crearAviso",
+      usuario:currentUser,
+      maquina:maquina.value,
+      proyecto:proyecto.value,
+      tipo:tipo.value,
+      descripcion:desc.value
+    })
+  })
+  .then(r=>r.text())
+  .then(t=>{
+    logDebug("Aviso: " + t);
+    loadData();
+  });
 
 }
 
 // ================= OT =================
 function crearOT(){
 
-  const data = new URLSearchParams();
+  logDebug("Crear OT");
 
-  data.append("action","crearOT");
-  data.append("emisor",emisor.value);
-  data.append("maquina",maquina.value);
-  data.append("op1",op1.value);
-  data.append("t1",t1.value);
-  data.append("proyecto",proyecto.value);
-  data.append("descripcion",desc.value);
-
-  fetch(BASE_URL,{ method:"POST", body:data })
-    .then(()=>loadData());
+  fetch(BASE_URL,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"crearOT",
+      maquina:maquina.value,
+      proyecto:proyecto.value,
+      descripcion:desc.value
+    })
+  })
+  .then(r=>r.text())
+  .then(t=>{
+    logDebug("OT: " + t);
+    loadData();
+  });
 
 }
 
@@ -311,9 +294,7 @@ function loadAvisos(){
     const div = document.getElementById("avisos");
     div.innerHTML = "";
 
-    const rows = t.split("\n");
-
-    rows.forEach((r,i)=>{
+    t.split("\n").forEach((r,i)=>{
 
       if(!r) return;
 
@@ -321,10 +302,8 @@ function loadAvisos(){
 
       div.innerHTML += `
       <div class="card">
-        <b>${f[3]}</b> - ${f[5]}
-        <br>
-        Usuario: ${f[2]} | Fecha: ${f[1]}
-        <br><br>
+        <b>${f[3]}</b> - ${f[5]}<br>
+        Usuario: ${f[2]} | Fecha: ${f[1]}<br><br>
 
         ${role !== "Produccion" ? `
         <button class="smallbtn green" onclick="convertirAviso(${i+2})">Convertir OT</button>
@@ -348,9 +327,7 @@ function loadOTs(){
     const div = document.getElementById("ots");
     div.innerHTML = "";
 
-    const rows = t.split("\n");
-
-    rows.forEach(r=>{
+    t.split("\n").forEach(r=>{
 
       if(!r) return;
 
@@ -367,13 +344,13 @@ function loadOTs(){
 }
 
 // ================= ACTIONS =================
-function convertirAviso(row){
-  fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
+function convertirAviso(r){
+  fetch(BASE_URL+"?action=convertirAviso&row="+r+"&usuario="+currentUser)
   .then(()=>loadData());
 }
 
-function eliminarAviso(row){
-  fetch(BASE_URL+"?action=rechazarAviso&row="+row+"&usuario="+currentUser)
+function eliminarAviso(r){
+  fetch(BASE_URL+"?action=rechazarAviso&row="+r+"&usuario="+currentUser)
   .then(()=>loadData());
 }
 
