@@ -3,15 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Gestión de Avisos OP Mobility Pedrola</title>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#f4f4f4;
-}
+body{ margin:0;font-family:Arial;background:#f4f4f4; }
 
 .header{
   background:#2d89ef;
@@ -40,17 +35,10 @@ button{
   color:white;
   border:none;
   border-radius:6px;
+  cursor:pointer;
 }
 
-button:hover{
-  background:#1b5fa7;
-}
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
+button:hover{ background:#1b5fa7; }
 
 .card{
   border:1px solid #ddd;
@@ -58,8 +46,6 @@ button:hover{
   margin:8px 0;
   border-radius:8px;
 }
-
-.hidden{ display:none; }
 
 .smallbtn{
   width:auto;
@@ -70,13 +56,15 @@ button:hover{
 .green{ background:#5cb85c; }
 .red{ background:#d9534f; }
 
+.hidden{ display:none; }
+
 /* DEBUG */
 #debugBox{
   position:fixed;
   bottom:0;
   left:0;
   right:0;
-  max-height:200px;
+  max-height:180px;
   overflow:auto;
   background:#000;
   color:#00ff00;
@@ -90,14 +78,12 @@ button:hover{
 
 <body>
 
-<!-- DEBUG -->
 <div id="debugBox"></div>
 
 <!-- LOGIN -->
 <div id="loginBox" class="container">
   <div class="header">Bienvenido al sistema de gestión de avisos</div>
 
-  <h3>Login</h3>
   <input id="user" placeholder="Usuario">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Entrar</button>
@@ -108,13 +94,13 @@ button:hover{
 
 <div class="header">
   Gestión de Avisos OP Mobility Pedrola
+  <button onclick="logout()" style="float:right;width:auto;">Cerrar sesión</button>
 </div>
 
 <div class="container">
 
 <h3>Generar Aviso / OT</h3>
 
-<!-- DESPLEGABLES -->
 <select id="maquina"></select>
 <select id="proyecto"></select>
 <select id="tipo"></select>
@@ -147,32 +133,27 @@ let currentUser = null;
 let role = null;
 
 // ================= DEBUG =================
-function logDebug(msg){
-  const box = document.getElementById("debugBox");
-  box.style.display = "block";
-  box.innerHTML += "<div>> " + msg + "</div>";
+function logDebug(m){
+  const b = document.getElementById("debugBox");
+  b.style.display = "block";
+  b.innerHTML += "<div>> "+m+"</div>";
 }
 
 // ================= LOGIN =================
 function login(){
 
-  logDebug("LOGIN CLICK");
-
-  const u = user.value;
-  const p = pass.value;
-
-  fetch(`${BASE_URL}?action=login&user=${u}&pass=${p}`)
+  fetch(BASE_URL+"?action=login&user="+user.value+"&pass="+pass.value)
   .then(r=>r.text())
   .then(t=>{
 
-    logDebug("RESP: " + t);
+    logDebug("LOGIN: "+t);
 
-    const parts = t.split("|");
+    const p = t.split("|");
 
-    if(parts[0] === "OK"){
+    if(p[0]==="OK"){
 
-      currentUser = u;
-      role = parts[2];
+      currentUser = user.value;
+      role = p[2] || "NORMAL";
 
       loginBox.classList.add("hidden");
       app.classList.remove("hidden");
@@ -189,12 +170,23 @@ function login(){
 
 }
 
+// ================= LOGOUT =================
+function logout(){
+  localStorage.clear();
+  location.reload();
+}
+
 // ================= ROLES =================
 function applyRoles(){
+
+  logDebug("ROL: "+role);
 
   if(role === "Produccion"){
     btnOT.style.display = "none";
     otPanel.style.display = "none";
+  } else {
+    btnOT.style.display = "block";
+    otPanel.style.display = "block";
   }
 
 }
@@ -208,72 +200,34 @@ function loadLists(){
   .then(r=>r.text())
   .then(t=>{
 
-    const rows = t.split("\n");
+    logDebug("RAW LISTAS: "+t);
 
     maquina.innerHTML = "";
     proyecto.innerHTML = "";
     tipo.innerHTML = "";
 
-    rows.forEach(r=>{
+    const lines = t.trim().split("\n");
 
-      if(!r) return;
+    if(!t || lines.length===0){
+      logDebug("LISTAS VACÍAS O ERROR");
+      return;
+    }
 
-      const f = r.split("|");
+    lines.forEach(l=>{
 
-      if(f[0] === "MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0] === "PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0] === "AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
+      const f = l.split("|");
+
+      if(f.length<2) return;
+
+      if(f[0]==="MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0]==="PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0]==="AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
 
     });
 
-    logDebug("Listas cargadas");
-
-  });
-
-}
-
-// ================= AVISO =================
-function crearAviso(){
-
-  logDebug("Crear aviso");
-
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({
-      action:"crearAviso",
-      usuario:currentUser,
-      maquina:maquina.value,
-      proyecto:proyecto.value,
-      tipo:tipo.value,
-      descripcion:desc.value
-    })
   })
-  .then(r=>r.text())
-  .then(t=>{
-    logDebug("Aviso: " + t);
-    loadData();
-  });
-
-}
-
-// ================= OT =================
-function crearOT(){
-
-  logDebug("Crear OT");
-
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({
-      action:"crearOT",
-      maquina:maquina.value,
-      proyecto:proyecto.value,
-      descripcion:desc.value
-    })
-  })
-  .then(r=>r.text())
-  .then(t=>{
-    logDebug("OT: " + t);
-    loadData();
+  .catch(e=>{
+    logDebug("ERROR LISTAS: "+e.message);
   });
 
 }
@@ -291,8 +245,8 @@ function loadAvisos(){
   .then(r=>r.text())
   .then(t=>{
 
-    const div = document.getElementById("avisos");
-    div.innerHTML = "";
+    const d = avisos;
+    d.innerHTML = "";
 
     t.split("\n").forEach((r,i)=>{
 
@@ -300,14 +254,14 @@ function loadAvisos(){
 
       const f = r.split("|");
 
-      div.innerHTML += `
+      d.innerHTML += `
       <div class="card">
         <b>${f[3]}</b> - ${f[5]}<br>
-        Usuario: ${f[2]} | Fecha: ${f[1]}<br><br>
+        Usuario: ${f[2]} | Fecha: ${f[1]}<br>
 
-        ${role !== "Produccion" ? `
+        ${role!=="Produccion" ? `
         <button class="smallbtn green" onclick="convertirAviso(${i+2})">Convertir OT</button>
-        ` : ""}
+        `:""}
 
         <button class="smallbtn red" onclick="eliminarAviso(${i+2})">Eliminar</button>
       </div>`;
@@ -324,8 +278,7 @@ function loadOTs(){
   .then(r=>r.text())
   .then(t=>{
 
-    const div = document.getElementById("ots");
-    div.innerHTML = "";
+    ots.innerHTML = "";
 
     t.split("\n").forEach(r=>{
 
@@ -333,7 +286,7 @@ function loadOTs(){
 
       const f = r.split("|");
 
-      div.innerHTML += `
+      ots.innerHTML += `
       <div class="card">
         OT: ${f[0]} | ${f[4]} | ${f[11]}
       </div>`;
