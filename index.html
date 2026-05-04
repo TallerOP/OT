@@ -78,12 +78,40 @@ button:hover{
 <body>
 
 <!-- ================= LOGIN ================= -->
-<div id="loginBox" class="container">
-  <h2>Login ERP</h2>
-  <input id="user" placeholder="Usuario">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Entrar</button>
-</div>
+function login(){
+
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
+
+  fetch(`${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`)
+    .then(r => r.text())
+    .then(t => {
+
+      console.log("LOGIN RESPONSE:", t);
+
+      // 🔥 ACEPTA VARIANTES (porque tu backend no es consistente aún)
+      if (t.includes("OK") || t.includes("Usuario") || t.length < 50) {
+
+        currentUser = u;
+        localStorage.setItem("user", u);
+
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+
+        document.getElementById("welcome").innerText = "Usuario: " + u;
+
+        loadData();
+
+      } else {
+        alert("Login incorrecto");
+      }
+
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error de conexión con servidor");
+    });
+}
 
 <!-- ================= APP ================= -->
 <div id="app" class="hidden">
