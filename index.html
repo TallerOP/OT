@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ERP Industrial</title>
+<title>Gestión de Avisos OP Mobility Pedrola</title>
 
 <style>
 body{
@@ -22,13 +22,13 @@ body{
 
 .container{
   max-width:1000px;
-  margin:20px auto;
+  margin:15px auto;
   background:white;
   padding:15px;
   border-radius:10px;
 }
 
-input, select, button{
+input, button{
   width:100%;
   padding:10px;
   margin:6px 0;
@@ -56,7 +56,7 @@ button:hover{
 .card{
   border:1px solid #ddd;
   padding:10px;
-  margin:10px 0;
+  margin:8px 0;
   border-radius:8px;
 }
 
@@ -64,13 +64,12 @@ button:hover{
 
 .smallbtn{
   width:auto;
-  padding:6px 10px;
+  padding:5px 10px;
   margin-right:5px;
 }
 
 .red{ background:#d9534f; }
 .green{ background:#5cb85c; }
-.orange{ background:#f0ad4e; }
 
 </style>
 </head>
@@ -78,40 +77,12 @@ button:hover{
 <body>
 
 <!-- ================= LOGIN ================= -->
-function login(){
-
-  const u = document.getElementById("user").value;
-  const p = document.getElementById("pass").value;
-
-  fetch(`${BASE_URL}?action=login&user=${encodeURIComponent(u)}&pass=${encodeURIComponent(p)}`)
-    .then(r => r.text())
-    .then(t => {
-
-      console.log("LOGIN RESPONSE:", t);
-
-      // 🔥 ACEPTA VARIANTES (porque tu backend no es consistente aún)
-      if (t.includes("OK") || t.includes("Usuario") || t.length < 50) {
-
-        currentUser = u;
-        localStorage.setItem("user", u);
-
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("app").classList.remove("hidden");
-
-        document.getElementById("welcome").innerText = "Usuario: " + u;
-
-        loadData();
-
-      } else {
-        alert("Login incorrecto");
-      }
-
-    })
-    .catch(err => {
-      console.error(err);
-      alert("Error de conexión con servidor");
-    });
-}
+<div id="loginBox" class="container">
+  <h2>Inicio de sesión</h2>
+  <input id="user" placeholder="Usuario">
+  <input id="pass" type="password" placeholder="Password">
+  <button onclick="login()">Entrar</button>
+</div>
 
 <!-- ================= APP ================= -->
 <div id="app" class="hidden">
@@ -121,9 +92,8 @@ function login(){
   <button onclick="logout()">Salir</button>
 </div>
 
+<!-- ================= CREAR AVISO ================= -->
 <div class="container">
-
-<!-- ================= AVISO ================= -->
 <h3>Crear Aviso</h3>
 
 <div class="grid">
@@ -135,12 +105,11 @@ function login(){
 <input id="desc" placeholder="Descripción">
 
 <button onclick="crearAviso()">Generar Aviso</button>
-
 </div>
 
-<!-- ================= OT ================= -->
+<!-- ================= CREAR OT ================= -->
 <div class="container" id="otBox">
-<h3>Generar OT</h3>
+<h3>Crear OT</h3>
 
 <div class="grid">
   <input id="emisor" placeholder="Emisor OT">
@@ -156,16 +125,15 @@ function login(){
 <input id="descOT" placeholder="Descripción">
 
 <button onclick="crearOT()">Crear OT</button>
-
 </div>
 
-<!-- ================= AVISOS PENDIENTES ================= -->
+<!-- ================= AVISOS ================= -->
 <div class="container">
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
 </div>
 
-<!-- ================= OTS PENDIENTES ================= -->
+<!-- ================= OTS ================= -->
 <div class="container">
 <h3>OTs pendientes exportación</h3>
 <div id="ots"></div>
@@ -189,34 +157,67 @@ function login(){
   const p = document.getElementById("pass").value;
 
   fetch(`${BASE_URL}?action=login&user=${u}&pass=${p}`)
-  .then(r=>r.text())
-  .then(t=>{
+    .then(r => r.text())
+    .then(t => {
 
-    if(t.includes("OK")){
+      console.log("LOGIN:", t);
 
-      currentUser = u;
-      localStorage.setItem("user",u);
+      const parts = t.split("|");
 
-      document.getElementById("loginBox").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
+      if(parts[0] === "OK"){
 
-      document.getElementById("welcome").innerText = "Usuario: " + u;
+        currentUser = u;
+        role = parts[2] || "NORMAL";
 
-      loadData();
+        localStorage.setItem("user", u);
+        localStorage.setItem("role", role);
 
-    } else {
-      alert("Login incorrecto");
-    }
-  });
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+
+        document.getElementById("welcome").innerText =
+          "Usuario: " + u + " | Rol: " + role;
+
+        loadData();
+
+      } else {
+        alert("Login incorrecto");
+      }
+
+    });
+
 }
 
 # =====================================================
 # LOGOUT
 # =====================================================
 function logout(){
-  localStorage.removeItem("user");
+  localStorage.clear();
   location.reload();
 }
+
+# =====================================================
+# AUTOLOGIN
+# =====================================================
+window.onload = function(){
+
+  const u = localStorage.getItem("user");
+  const r = localStorage.getItem("role");
+
+  if(u){
+    currentUser = u;
+    role = r;
+
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+
+    document.getElementById("welcome").innerText =
+      "Usuario: " + u + " | Rol: " + r;
+
+    loadData();
+  }
+
+};
 
 # =====================================================
 # CREAR AVISO
@@ -233,8 +234,7 @@ function crearAviso(){
   data.append("descripcion",document.getElementById("desc").value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-  .then(r=>r.text())
-  .then(()=>loadData());
+    .then(()=>loadData());
 
 }
 
@@ -254,19 +254,16 @@ function crearOT(){
   data.append("descripcion",document.getElementById("descOT").value);
 
   fetch(BASE_URL,{ method:"POST", body:data })
-  .then(r=>r.text())
-  .then(()=>loadData());
+    .then(()=>loadData());
 
 }
 
 # =====================================================
-# CARGAR DATOS
+# CARGA GENERAL
 # =====================================================
 function loadData(){
-
   loadAvisos();
   loadOTs();
-
 }
 
 # =====================================================
@@ -280,8 +277,6 @@ function loadAvisos(){
 
     const div = document.getElementById("avisos");
     div.innerHTML = "";
-
-    if(!t) return;
 
     const rows = t.split("\n");
 
@@ -331,7 +326,7 @@ function loadOTs(){
 
       div.innerHTML += `
       <div class="card">
-        OT: ${f[0]} - ${f[4]} - ${f[11]}
+        OT: ${f[0]} | ${f[4]} | ${f[11]}
       </div>`;
     });
 
@@ -350,7 +345,7 @@ function convertirAviso(row){
 }
 
 # =====================================================
-# ELIMINAR AVISO (CON LOG EN BACKEND)
+# ELIMINAR AVISO
 # =====================================================
 function eliminarAviso(row){
 
