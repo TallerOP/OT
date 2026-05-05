@@ -18,14 +18,40 @@ body{
   min-height:100vh;
 }
 
+/* HEADER */
 .header{
   background:#003366;
   color:white;
-  padding:12px;
+  padding:10px 15px;
   display:flex;
+  align-items:center;
   justify-content:space-between;
 }
 
+.menu{
+  display:flex;
+  gap:10px;
+}
+
+.menu button{
+  background:white;
+  color:#003366;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.logout{
+  background:white;
+  color:#003366;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+/* CONTENIDO */
 .container{
   max-width:900px;
   margin:15px auto;
@@ -40,31 +66,53 @@ input, select, button{
   padding:10px;
   margin:6px 0;
   border-radius:6px;
+  border:1px solid #ccc;
 }
 
-button{
+/* BOTONES */
+.btn-main{
   background:#003366;
   color:white;
   border:none;
   cursor:pointer;
 }
 
-.green{ background:#28a745; }
-.red{ background:#dc3545; }
-
-.card{
-  border:1px solid #ddd;
-  padding:10px;
-  margin:8px 0;
-  border-radius:8px;
+.btn-main:hover{
+  background:#0055aa;
 }
 
+.btn-secondary{
+  background:#28a745;
+  color:white;
+}
+
+.btn-danger{
+  background:#dc3545;
+  color:white;
+}
+
+/* CARDS */
+.card{
+  border:1px solid #ddd;
+  padding:12px;
+  margin:10px 0;
+  border-radius:8px;
+  background:#fafafa;
+}
+
+.desc{
+  font-weight:bold;
+  font-size:15px;
+  margin:6px 0;
+}
+
+/* DEBUG */
 #debugBox{
   position:fixed;
   bottom:0;
   left:0;
   right:0;
-  max-height:200px;
+  max-height:180px;
   overflow:auto;
   background:black;
   color:#00ff00;
@@ -81,18 +129,26 @@ button{
 
 <div id="debugBox"></div>
 
+<!-- LOGIN -->
 <div id="loginBox" class="container">
 <h2>Bienvenido al sistema de gestión de avisos</h2>
 <input id="user" placeholder="Usuario">
 <input id="pass" type="password" placeholder="Password">
-<button onclick="login()">Entrar</button>
+<button class="btn-main" onclick="login()">Entrar</button>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none;">
 
 <div class="header">
-<div>Gestión OP Mobility</div>
-<button onclick="logout()">Cerrar sesión</button>
+
+<div class="menu">
+<button id="btnPendientes" onclick="irPendientes()">Gestión avisos convertidos</button>
+<button id="btnDashboard" onclick="irDashboard()">Dashboard</button>
+</div>
+
+<button class="logout" onclick="logout()">Cerrar sesión</button>
+
 </div>
 
 <div class="container">
@@ -105,13 +161,8 @@ button{
 
 <input id="desc" placeholder="Descripción">
 
-<button onclick="crearAviso()">Generar Aviso</button>
-<button id="btnOT" onclick="crearOT()">Generar OT</button>
-
-<hr>
-
-<button onclick="irPendientes()">Completar avisos convertidos</button>
-<button id="btnDashboard" onclick="irDashboard()">Dashboard</button>
+<button id="btnAviso" class="btn-main" onclick="crearAviso()">Generar Aviso</button>
+<button id="btnOT" class="btn-main" onclick="crearOT()">Generar OT</button>
 
 </div>
 
@@ -130,6 +181,7 @@ const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSG
 let currentUser=null;
 let role=null;
 
+// DEBUG
 function logDebug(m){
 const d=document.getElementById("debugBox");
 d.style.display="block";
@@ -143,8 +195,6 @@ fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
 .then(r=>r.text())
 .then(t=>{
 
-logDebug("LOGIN "+t);
-
 const p=t.split("|");
 
 if(p[0]==="OK"){
@@ -157,6 +207,7 @@ app.style.display="block";
 applyRoles();
 loadLists();
 loadAvisos();
+
 }else{
 alert("Login incorrecto");
 }
@@ -169,6 +220,8 @@ function applyRoles(){
 
 if(role==="Produccion"){
 btnOT.style.display="none";
+btnDashboard.style.display="none";
+btnPendientes.style.display="none";
 }
 
 if(role!=="Supervisor"){
@@ -214,7 +267,14 @@ tipo:tipo.value,
 descripcion:desc.value
 })
 })
-.then(()=>loadAvisos());
+.then(r=>r.text())
+.then(t=>{
+if(t==="OK"){
+alert("Aviso registrado");
+desc.value="";
+loadAvisos();
+}
+});
 }
 
 // CREAR OT
@@ -245,30 +305,31 @@ const row=i+2;
 
 avisos.innerHTML+=`
 <div class="card">
-<b>${f[3]}</b> - ${f[5]}<br>
-Usuario: ${f[2]}<br><br>
 
-<button class="green" onclick="convertirAviso(${row}, '${f.join("||")}')">Convertir OT</button>
-<button class="red" onclick="eliminarAviso(${row})">Eliminar</button>
+<div><b>Máquina:</b> ${f[3]}</div>
+<div><b>Fecha:</b> ${new Date(f[1]).toLocaleString()}</div>
+<div class="desc">${f[6]}</div>
+<div><b>Usuario:</b> ${f[2]}</div>
+
+${role!=="Produccion" ? `
+<button class="btn-main" onclick="convertirAviso(${row}, '${f.join("||")}')">Convertir a OT</button>
+`:""}
+
+<button class="btn-danger" onclick="eliminarAviso(${row})">Eliminar</button>
+
 </div>`;
 });
 
 });
 }
 
-// CONVERTIR + ABRIR OT
+// CONVERTIR
 function convertirAviso(row,data){
 
 fetch(BASE_URL+`?action=convertirAviso&row=${row}&usuario=${currentUser}`)
-.then(r=>r.text())
-.then(t=>{
+.then(()=>{
 
-logDebug("Convertido "+t);
-
-// guardamos datos aviso
 localStorage.setItem("aviso_data",data);
-
-// abrir OT
 window.location.href="ot.html";
 
 });
@@ -290,7 +351,9 @@ function irDashboard(){
 window.location.href="dashboard.html";
 }
 
-function logout(){ location.reload(); }
+function logout(){
+location.reload();
+}
 
 </script>
 
