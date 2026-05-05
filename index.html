@@ -9,61 +9,70 @@
 <style>
 body{
   margin:0;
-  font-family:Arial;
-  background:#f4f4f4;
+  font-family:Segoe UI;
+  background:url('op.png') no-repeat center center fixed;
+  background-size:cover;
+  color:#333;
 }
 
+/* CAPA BLANCA SUAVE */
+.overlay{
+  background:rgba(255,255,255,0.9);
+  min-height:100vh;
+}
+
+/* HEADER */
 .header{
-  background:#2d89ef;
+  background:#003366;
   color:white;
   padding:12px;
   font-size:18px;
+  display:flex;
+  justify-content:space-between;
 }
 
+/* CONTENEDOR */
 .container{
-  max-width:1000px;
+  max-width:900px;
   margin:15px auto;
   background:white;
   padding:15px;
   border-radius:10px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
+/* INPUTS */
 input, select, button{
   width:100%;
   padding:10px;
   margin:6px 0;
-  box-sizing:border-box;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 
+/* BOTONES */
 button{
-  background:#2d89ef;
+  background:#003366;
   color:white;
   border:none;
-  border-radius:6px;
   cursor:pointer;
 }
 
 button:hover{
-  background:#1b5fa7;
+  background:#0055aa;
 }
 
+.green{ background:#28a745; }
+.red{ background:#dc3545; }
+
+/* TARJETAS */
 .card{
   border:1px solid #ddd;
   padding:10px;
   margin:8px 0;
   border-radius:8px;
+  background:#fafafa;
 }
-
-.smallbtn{
-  width:auto;
-  padding:5px 10px;
-  margin-right:5px;
-}
-
-.green{ background:#5cb85c; }
-.red{ background:#d9534f; }
-
-.hidden{ display:none; }
 
 /* DEBUG */
 #debugBox{
@@ -73,35 +82,35 @@ button:hover{
   right:0;
   max-height:200px;
   overflow:auto;
-  background:#000;
+  background:black;
   color:#00ff00;
   font-size:12px;
   padding:8px;
   display:none;
-  z-index:99999;
 }
 </style>
 </head>
 
 <body>
 
+<div class="overlay">
+
 <div id="debugBox"></div>
 
 <!-- LOGIN -->
 <div id="loginBox" class="container">
-  <div class="header">Bienvenido al sistema de gestión de avisos</div>
-
+  <h2>Bienvenido al sistema de gestión de avisos</h2>
   <input id="user" placeholder="Usuario">
   <input id="pass" type="password" placeholder="Password">
   <button onclick="login()">Entrar</button>
 </div>
 
 <!-- APP -->
-<div id="app" class="hidden">
+<div id="app" style="display:none;">
 
 <div class="header">
-  Gestión de Avisos OP Mobility Pedrola
-  <button onclick="logout()" style="float:right;width:auto;">Cerrar sesión</button>
+  <div>Gestión OP Mobility</div>
+  <button onclick="logout()">Cerrar sesión</button>
 </div>
 
 <div class="container">
@@ -125,249 +134,222 @@ button:hover{
 </div>
 
 <div class="container" id="otPanel">
-<h3>OTs pendientes exportación</h3>
+<h3>OTs pendientes</h3>
 <div id="ots"></div>
 </div>
 
+</div>
 </div>
 
 <script>
 
 const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSGZkSoe9qeeL8kOD_vV2QbyY_HTDm9tz99l9PiHMZb7FnTu/exec";
 
-let currentUser = null;
-let role = null;
+let currentUser=null;
+let role=null;
 
-// ================= DEBUG =================
-function logDebug(msg){
-  const box = document.getElementById("debugBox");
-  box.style.display = "block";
-  box.innerHTML += "<div>> " + msg + "</div>";
+// DEBUG
+function logDebug(m){
+  const d=document.getElementById("debugBox");
+  d.style.display="block";
+  d.innerHTML+="<div>> "+m+"</div>";
 }
 
-// ================= LOGIN =================
+// LOGIN
 function login(){
 
-  logDebug("LOGIN CLICK");
+fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
+.then(r=>r.text())
+.then(t=>{
 
-  fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
-  .then(r=>r.text())
-  .then(t=>{
+logDebug("LOGIN: "+t);
 
-    logDebug("RESP LOGIN: " + t);
+const p=t.split("|");
 
-    const p = t.split("|");
+if(p[0]==="OK"){
+currentUser=user.value;
+role=p[2];
 
-    if(p[0] === "OK"){
+loginBox.style.display="none";
+app.style.display="block";
 
-      currentUser = user.value;
-      role = p[2] || "NORMAL";
-
-      loginBox.classList.add("hidden");
-      app.classList.remove("hidden");
-
-      applyRoles();
-      loadData();
-      loadLists();
-
-    } else {
-      alert("Login incorrecto");
-    }
-
-  });
-
+applyRoles();
+loadLists();
+loadData();
+}else{
+alert("Login incorrecto");
 }
 
-// ================= LOGOUT =================
-function logout(){
-  location.reload();
+});
 }
 
-// ================= ROLES =================
+// LOGOUT
+function logout(){ location.reload(); }
+
+// ROLES
 function applyRoles(){
-
-  logDebug("ROL: " + role);
-
-  if(role === "Produccion"){
-    btnOT.style.display = "none";
-    otPanel.style.display = "none";
-  }
-
+if(role==="Produccion"){
+btnOT.style.display="none";
+otPanel.style.display="none";
+}
 }
 
-// ================= LISTAS =================
+// LISTAS
 function loadLists(){
 
-  logDebug("Cargando listas...");
+fetch(BASE_URL+"?action=getListas")
+.then(r=>r.text())
+.then(t=>{
 
-  fetch(BASE_URL+"?action=getListas")
-  .then(r=>r.text())
-  .then(t=>{
+logDebug("LISTAS: "+t);
 
-    logDebug("RAW LISTAS: " + t);
+maquina.innerHTML="";
+proyecto.innerHTML="";
+tipo.innerHTML="";
 
-    maquina.innerHTML = "";
-    proyecto.innerHTML = "";
-    tipo.innerHTML = "";
+t.split("\n").forEach(l=>{
 
-    t.split("\n").forEach(l=>{
+if(!l)return;
+const f=l.split("|");
 
-      if(!l) return;
+if(f[0]==="MAQUINA") maquina.innerHTML+=`<option>${f[1]}</option>`;
+if(f[0]==="PROYECTO") proyecto.innerHTML+=`<option>${f[1]}</option>`;
+if(f[0]==="AVERIA") tipo.innerHTML+=`<option>${f[1]}</option>`;
 
-      const f = l.split("|");
+});
 
-      if(f[0] === "MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0] === "PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0] === "AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
-
-    });
-
-  });
-
+});
 }
 
-// ================= CREAR AVISO =================
+// CREAR AVISO
 function crearAviso(){
 
-  logDebug("CLICK crearAviso");
-
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({
-      action:"crearAviso",
-      usuario:currentUser,
-      maquina:maquina.value,
-      proyecto:proyecto.value,
-      tipo:tipo.value,
-      descripcion:desc.value
-    })
-  })
-  .then(r=>r.text())
-  .then(t=>{
-
-    logDebug("RESP AVISO: " + t);
-
-    if(t === "OK"){
-      alert("Aviso creado correctamente");
-      desc.value = "";
-      loadData();
-    } else {
-      alert("Error: " + t);
-    }
-
-  });
-
+fetch(BASE_URL,{
+method:"POST",
+body:new URLSearchParams({
+action:"crearAviso",
+usuario:currentUser,
+maquina:maquina.value,
+proyecto:proyecto.value,
+tipo:tipo.value,
+descripcion:desc.value
+})
+})
+.then(r=>r.text())
+.then(t=>{
+logDebug("AVISO: "+t);
+alert("Aviso creado");
+loadData();
+});
 }
 
-// ================= CREAR OT =================
+// CREAR OT
 function crearOT(){
 
-  logDebug("CLICK crearOT");
+fetch(BASE_URL,{
+method:"POST",
+body:new URLSearchParams({
+action:"crearOT",
+maquina:maquina.value,
+proyecto:proyecto.value,
+descripcion:desc.value
+})
+})
+.then(r=>r.text())
+.then(t=>{
 
-  fetch(BASE_URL,{
-    method:"POST",
-    body:new URLSearchParams({
-      action:"crearOT",
-      maquina:maquina.value,
-      proyecto:proyecto.value,
-      descripcion:desc.value
-    })
-  })
-  .then(r=>r.text())
-  .then(t=>{
+logDebug("OT: "+t);
 
-    logDebug("RESP OT: " + t);
-
-    if(t === "OK"){
-
-      alert("OT creada correctamente");
-
-      localStorage.setItem("ot_maquina", maquina.value);
-      localStorage.setItem("ot_proyecto", proyecto.value);
-      localStorage.setItem("ot_desc", desc.value);
-
-      window.location.href = "ot.html";
-
-    } else {
-      alert("Error OT: " + t);
-    }
-
-  });
-
+if(t==="OK"){
+window.location.href="ot.html";
+}else{
+alert("Error OT");
 }
 
-// ================= LOAD =================
-function loadData(){
-  loadAvisos();
-  loadOTs();
+});
 }
 
-// ================= AVISOS =================
+// AVISOS
 function loadAvisos(){
 
-  fetch(BASE_URL+"?action=getAvisos")
-  .then(r=>r.text())
-  .then(t=>{
+fetch(BASE_URL+"?action=getAvisos")
+.then(r=>r.text())
+.then(t=>{
 
-    avisos.innerHTML = "";
+avisos.innerHTML="";
 
-    t.split("\n").forEach((r,i)=>{
+t.split("\n").forEach((r,i)=>{
 
-      if(!r) return;
+if(!r)return;
 
-      const f = r.split("|");
+const f=r.split("|");
 
-      avisos.innerHTML += `
-      <div class="card">
-        <b>${f[3]}</b> - ${f[5]}<br>
-        Usuario: ${f[2]} | Fecha: ${f[1]}<br>
+const row=i+2;
 
-        ${role !== "Produccion" ? `
-        <button class="smallbtn green" onclick="convertirAviso(${i+2})">Convertir OT</button>
-        ` : ""}
+avisos.innerHTML+=`
+<div class="card">
+<b>${f[3]}</b> - ${f[5]}<br>
+Usuario: ${f[2]} | Fecha: ${f[1]}<br><br>
 
-        <button class="smallbtn red" onclick="eliminarAviso(${i+2})">Eliminar</button>
-      </div>`;
-    });
+${role!=="Produccion" ? `<button class="green" onclick="convertirAviso(${row})">Convertir OT</button>`:""}
 
-  });
+<button class="red" onclick="eliminarAviso(${row})">Eliminar</button>
+</div>`;
+});
 
+});
 }
 
-// ================= OTs =================
+// OTs
 function loadOTs(){
 
-  fetch(BASE_URL+"?action=getOTs")
-  .then(r=>r.text())
-  .then(t=>{
+fetch(BASE_URL+"?action=getOTs")
+.then(r=>r.text())
+.then(t=>{
 
-    ots.innerHTML = "";
+ots.innerHTML="";
 
-    t.split("\n").forEach(r=>{
+t.split("\n").forEach(r=>{
+if(!r)return;
+const f=r.split("|");
+ots.innerHTML+=`<div class="card">OT ${f[0]}</div>`;
+});
 
-      if(!r) return;
-
-      const f = r.split("|");
-
-      ots.innerHTML += `
-      <div class="card">
-        OT: ${f[0]} | ${f[4]} | ${f[11]}
-      </div>`;
-    });
-
-  });
-
+});
 }
 
-// ================= ACCIONES =================
-function convertirAviso(r){
-  fetch(BASE_URL+"?action=convertirAviso&row="+r+"&usuario="+currentUser)
-  .then(()=>loadData());
+// CONVERTIR
+function convertirAviso(row){
+
+logDebug("Convertir fila "+row);
+
+fetch(BASE_URL+`?action=convertirAviso&row=${row}&usuario=${currentUser}`)
+.then(r=>r.text())
+.then(t=>{
+logDebug("RESP CONVERTIR: "+t);
+alert("Aviso convertido");
+loadData();
+});
 }
 
-function eliminarAviso(r){
-  fetch(BASE_URL+"?action=rechazarAviso&row="+r+"&usuario="+currentUser)
-  .then(()=>loadData());
+// ELIMINAR
+function eliminarAviso(row){
+
+logDebug("Eliminar fila "+row);
+
+fetch(BASE_URL+`?action=rechazarAviso&row=${row}&usuario=${currentUser}`)
+.then(r=>r.text())
+.then(t=>{
+logDebug("RESP ELIMINAR: "+t);
+alert("Aviso eliminado");
+loadData();
+});
+}
+
+// LOAD
+function loadData(){
+loadAvisos();
+loadOTs();
 }
 
 </script>
