@@ -3,10 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Gestión de Avisos OP Mobility Pedrola</title>
 
 <style>
-body{ margin:0;font-family:Arial;background:#f4f4f4; }
+body{
+  margin:0;
+  font-family:Arial;
+  background:#f4f4f4;
+}
 
 .header{
   background:#2d89ef;
@@ -38,7 +43,9 @@ button{
   cursor:pointer;
 }
 
-button:hover{ background:#1b5fa7; }
+button:hover{
+  background:#1b5fa7;
+}
 
 .card{
   border:1px solid #ddd;
@@ -64,7 +71,7 @@ button:hover{ background:#1b5fa7; }
   bottom:0;
   left:0;
   right:0;
-  max-height:180px;
+  max-height:200px;
   overflow:auto;
   background:#000;
   color:#00ff00;
@@ -108,7 +115,6 @@ button:hover{ background:#1b5fa7; }
 <input id="desc" placeholder="Descripción">
 
 <button onclick="crearAviso()">Generar Aviso</button>
-
 <button id="btnOT" onclick="crearOT()">Generar OT</button>
 
 </div>
@@ -127,30 +133,32 @@ button:hover{ background:#1b5fa7; }
 
 <script>
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSGZkSoe9qeeL8kOD_vV2QbyY_HTDm9tz99l9PiHMZb7FnTu/exec";
+const BASE_URL = "https://script.google.com/macros/s/AKfycbzc4rVg7WTutyAM4BzSQXhur-jv7NhEW84_AfLL_b-rlTP97TgKLSGjZAQmeDDct-Zq/exec";
 
 let currentUser = null;
 let role = null;
 
 // ================= DEBUG =================
-function logDebug(m){
-  const b = document.getElementById("debugBox");
-  b.style.display = "block";
-  b.innerHTML += "<div>> "+m+"</div>";
+function logDebug(msg){
+  const box = document.getElementById("debugBox");
+  box.style.display = "block";
+  box.innerHTML += "<div>> " + msg + "</div>";
 }
 
 // ================= LOGIN =================
 function login(){
 
-  fetch(BASE_URL+"?action=login&user="+user.value+"&pass="+pass.value)
+  logDebug("LOGIN CLICK");
+
+  fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
   .then(r=>r.text())
   .then(t=>{
 
-    logDebug("LOGIN: "+t);
+    logDebug("RESP LOGIN: " + t);
 
     const p = t.split("|");
 
-    if(p[0]==="OK"){
+    if(p[0] === "OK"){
 
       currentUser = user.value;
       role = p[2] || "NORMAL";
@@ -172,21 +180,17 @@ function login(){
 
 // ================= LOGOUT =================
 function logout(){
-  localStorage.clear();
   location.reload();
 }
 
 // ================= ROLES =================
 function applyRoles(){
 
-  logDebug("ROL: "+role);
+  logDebug("ROL: " + role);
 
   if(role === "Produccion"){
     btnOT.style.display = "none";
     otPanel.style.display = "none";
-  } else {
-    btnOT.style.display = "block";
-    otPanel.style.display = "block";
   }
 
 }
@@ -200,34 +204,94 @@ function loadLists(){
   .then(r=>r.text())
   .then(t=>{
 
-    logDebug("RAW LISTAS: "+t);
+    logDebug("RAW LISTAS: " + t);
 
     maquina.innerHTML = "";
     proyecto.innerHTML = "";
     tipo.innerHTML = "";
 
-    const lines = t.trim().split("\n");
+    t.split("\n").forEach(l=>{
 
-    if(!t || lines.length===0){
-      logDebug("LISTAS VACÍAS O ERROR");
-      return;
-    }
-
-    lines.forEach(l=>{
+      if(!l) return;
 
       const f = l.split("|");
 
-      if(f.length<2) return;
-
-      if(f[0]==="MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0]==="PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
-      if(f[0]==="AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0] === "MAQUINA") maquina.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0] === "PROYECTO") proyecto.innerHTML += `<option>${f[1]}</option>`;
+      if(f[0] === "AVERIA") tipo.innerHTML += `<option>${f[1]}</option>`;
 
     });
 
+  });
+
+}
+
+// ================= CREAR AVISO =================
+function crearAviso(){
+
+  logDebug("CLICK crearAviso");
+
+  fetch(BASE_URL,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"crearAviso",
+      usuario:currentUser,
+      maquina:maquina.value,
+      proyecto:proyecto.value,
+      tipo:tipo.value,
+      descripcion:desc.value
+    })
   })
-  .catch(e=>{
-    logDebug("ERROR LISTAS: "+e.message);
+  .then(r=>r.text())
+  .then(t=>{
+
+    logDebug("RESP AVISO: " + t);
+
+    if(t === "OK"){
+      alert("Aviso creado correctamente");
+      desc.value = "";
+      loadData();
+    } else {
+      alert("Error: " + t);
+    }
+
+  });
+
+}
+
+// ================= CREAR OT =================
+function crearOT(){
+
+  logDebug("CLICK crearOT");
+
+  fetch(BASE_URL,{
+    method:"POST",
+    body:new URLSearchParams({
+      action:"crearOT",
+      maquina:maquina.value,
+      proyecto:proyecto.value,
+      descripcion:desc.value
+    })
+  })
+  .then(r=>r.text())
+  .then(t=>{
+
+    logDebug("RESP OT: " + t);
+
+    if(t === "OK"){
+
+      alert("OT creada correctamente");
+
+      localStorage.setItem("ot_maquina", maquina.value);
+      localStorage.setItem("ot_proyecto", proyecto.value);
+      localStorage.setItem("ot_desc", desc.value);
+
+      window.location.href = "ot.html";
+
+    } else {
+      alert("Error OT: " + t);
+    }
+
   });
 
 }
@@ -245,8 +309,7 @@ function loadAvisos(){
   .then(r=>r.text())
   .then(t=>{
 
-    const d = avisos;
-    d.innerHTML = "";
+    avisos.innerHTML = "";
 
     t.split("\n").forEach((r,i)=>{
 
@@ -254,14 +317,14 @@ function loadAvisos(){
 
       const f = r.split("|");
 
-      d.innerHTML += `
+      avisos.innerHTML += `
       <div class="card">
         <b>${f[3]}</b> - ${f[5]}<br>
         Usuario: ${f[2]} | Fecha: ${f[1]}<br>
 
-        ${role!=="Produccion" ? `
+        ${role !== "Produccion" ? `
         <button class="smallbtn green" onclick="convertirAviso(${i+2})">Convertir OT</button>
-        `:""}
+        ` : ""}
 
         <button class="smallbtn red" onclick="eliminarAviso(${i+2})">Eliminar</button>
       </div>`;
@@ -296,7 +359,7 @@ function loadOTs(){
 
 }
 
-// ================= ACTIONS =================
+// ================= ACCIONES =================
 function convertirAviso(r){
   fetch(BASE_URL+"?action=convertirAviso&row="+r+"&usuario="+currentUser)
   .then(()=>loadData());
