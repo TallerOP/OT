@@ -61,7 +61,6 @@ body{
   box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* INPUTS */
 input, select, button{
   width:100%;
   padding:10px;
@@ -183,14 +182,14 @@ input, select, button{
 
 const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSGZkSoe9qeeL8kOD_vV2QbyY_HTDm9tz99l9PiHMZb7FnTu/exec";
 
-let currentUser=null;
-let role=null;
+let currentUser = null;
+let role = null;
 
 /* DEBUG */
 function logDebug(m){
-const d=document.getElementById("debugBox");
-d.style.display="block";
-d.innerHTML+="<div>> "+m+"</div>";
+  const d=document.getElementById("debugBox");
+  d.style.display="block";
+  d.innerHTML+="<div>> "+m+"</div>";
 }
 
 /* LOGIN */
@@ -199,8 +198,6 @@ function login(){
 fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
 .then(r=>r.text())
 .then(t=>{
-
-logDebug("LOGIN: "+t);
 
 const p=t.split("|");
 
@@ -214,6 +211,7 @@ app.style.display="block";
 applyRoles();
 loadLists();
 loadAvisos();
+
 }else{
 alert("Login incorrecto");
 }
@@ -270,8 +268,8 @@ descripcion:desc.value
 })
 .then(r=>r.text())
 .then(t=>{
-logDebug("AVISO: "+t);
 alert("Aviso registrado");
+desc.value="";
 loadAvisos();
 });
 }
@@ -286,7 +284,9 @@ localStorage.setItem("ot_desc",desc.value);
 window.location.href="ot.html";
 }
 
-/* AVISOS */
+/* =========================
+   AVISOS (FIX DEFINITIVO)
+========================= */
 function loadAvisos(){
 
 fetch(BASE_URL+"?action=getAvisos")
@@ -295,47 +295,30 @@ fetch(BASE_URL+"?action=getAvisos")
 
 avisos.innerHTML="";
 
-t.split("\n").forEach((r,i)=>{
+t.split("\n").forEach(r=>{
 
-if(!r)return;
+if(!r) return;
 
-const f=r.split("|");
-const row=f[0]; // 👈 FIX REAL (fila correcta)
+const f = r.split("|");
+const row = f[0];
 
-avisos.innerHTML+=`
-<div class="card">
+const card = document.createElement("div");
+card.className = "card";
 
+card.innerHTML = `
 <div><b>Máquina:</b> ${f[3]}</div>
 <div><b>Fecha:</b> ${new Date(f[1]).toLocaleString()}</div>
 <div class="desc">${f[6]}</div>
 <div><b>Usuario:</b> ${f[2]}</div>
 
-<button class="btn-ok"
-onclick="convertirAviso(this)"
-data-row="${row}"
-data-data="${encodeURIComponent(f.join('||'))}">
-Convertir a OT
-</button>
-
-<button class="btn-danger"
-onclick="eliminarAviso(this)"
-data-row="${row}">
-Eliminar
-</button>
-
-</div>`;
-});
-
-});
-}
+<button class="btn-ok">Convertir a OT</button>
+<button class="btn-danger">Eliminar</button>
+`;
 
 /* CONVERTIR */
-window.convertirAviso = function(el){
+card.querySelector(".btn-ok").onclick = function(){
 
-const row = el.getAttribute("data-row");
-const data = decodeURIComponent(el.getAttribute("data-data"));
-
-logDebug("CONVERTIR: "+row);
+logDebug("CONVERTIR " + row);
 
 fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
 .then(r=>r.text())
@@ -343,27 +326,38 @@ fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
 
 logDebug("RESP: "+t);
 
-localStorage.setItem("aviso_data",data);
+localStorage.setItem("aviso_data", f.join("||"));
+
+card.remove();
+
 window.location.href="ot.html";
 
 });
 
-}
+};
 
 /* ELIMINAR */
-window.eliminarAviso = function(el){
+card.querySelector(".btn-danger").onclick = function(){
 
-const row = el.getAttribute("data-row");
-
-logDebug("ELIMINAR: "+row);
+logDebug("ELIMINAR " + row);
 
 fetch(BASE_URL+"?action=rechazarAviso&row="+row+"&usuario="+currentUser)
 .then(r=>r.text())
 .then(t=>{
+
 logDebug("RESP: "+t);
-loadAvisos();
+
+card.remove();
+
 });
 
+};
+
+avisos.appendChild(card);
+
+});
+
+});
 }
 
 /* NAV */
