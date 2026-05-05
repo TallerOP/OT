@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Gestión de Avisos OP Mobility Pedrola</title>
 
 <style>
@@ -12,26 +11,21 @@ body{
   font-family:Segoe UI;
   background:url('op.png') no-repeat center center fixed;
   background-size:cover;
-  color:#333;
 }
 
-/* CAPA BLANCA SUAVE */
 .overlay{
   background:rgba(255,255,255,0.9);
   min-height:100vh;
 }
 
-/* HEADER */
 .header{
   background:#003366;
   color:white;
   padding:12px;
-  font-size:18px;
   display:flex;
   justify-content:space-between;
 }
 
-/* CONTENEDOR */
 .container{
   max-width:900px;
   margin:15px auto;
@@ -41,16 +35,13 @@ body{
   box-shadow:0 4px 10px rgba(0,0,0,0.2);
 }
 
-/* INPUTS */
 input, select, button{
   width:100%;
   padding:10px;
   margin:6px 0;
   border-radius:6px;
-  border:1px solid #ccc;
 }
 
-/* BOTONES */
 button{
   background:#003366;
   color:white;
@@ -58,23 +49,16 @@ button{
   cursor:pointer;
 }
 
-button:hover{
-  background:#0055aa;
-}
-
 .green{ background:#28a745; }
 .red{ background:#dc3545; }
 
-/* TARJETAS */
 .card{
   border:1px solid #ddd;
   padding:10px;
   margin:8px 0;
   border-radius:8px;
-  background:#fafafa;
 }
 
-/* DEBUG */
 #debugBox{
   position:fixed;
   bottom:0;
@@ -97,20 +81,18 @@ button:hover{
 
 <div id="debugBox"></div>
 
-<!-- LOGIN -->
 <div id="loginBox" class="container">
-  <h2>Bienvenido al sistema de gestión de avisos</h2>
-  <input id="user" placeholder="Usuario">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Entrar</button>
+<h2>Bienvenido al sistema de gestión de avisos</h2>
+<input id="user" placeholder="Usuario">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Entrar</button>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none;">
 
 <div class="header">
-  <div>Gestión OP Mobility</div>
-  <button onclick="logout()">Cerrar sesión</button>
+<div>Gestión OP Mobility</div>
+<button onclick="logout()">Cerrar sesión</button>
 </div>
 
 <div class="container">
@@ -126,16 +108,16 @@ button:hover{
 <button onclick="crearAviso()">Generar Aviso</button>
 <button id="btnOT" onclick="crearOT()">Generar OT</button>
 
+<hr>
+
+<button onclick="irPendientes()">Completar avisos convertidos</button>
+<button id="btnDashboard" onclick="irDashboard()">Dashboard</button>
+
 </div>
 
 <div class="container">
 <h3>Avisos pendientes</h3>
 <div id="avisos"></div>
-</div>
-
-<div class="container" id="otPanel">
-<h3>OTs pendientes</h3>
-<div id="ots"></div>
 </div>
 
 </div>
@@ -148,11 +130,10 @@ const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSG
 let currentUser=null;
 let role=null;
 
-// DEBUG
 function logDebug(m){
-  const d=document.getElementById("debugBox");
-  d.style.display="block";
-  d.innerHTML+="<div>> "+m+"</div>";
+const d=document.getElementById("debugBox");
+d.style.display="block";
+d.innerHTML+="<div>> "+m+"</div>";
 }
 
 // LOGIN
@@ -162,7 +143,7 @@ fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
 .then(r=>r.text())
 .then(t=>{
 
-logDebug("LOGIN: "+t);
+logDebug("LOGIN "+t);
 
 const p=t.split("|");
 
@@ -175,7 +156,7 @@ app.style.display="block";
 
 applyRoles();
 loadLists();
-loadData();
+loadAvisos();
 }else{
 alert("Login incorrecto");
 }
@@ -183,15 +164,17 @@ alert("Login incorrecto");
 });
 }
 
-// LOGOUT
-function logout(){ location.reload(); }
-
 // ROLES
 function applyRoles(){
+
 if(role==="Produccion"){
 btnOT.style.display="none";
-otPanel.style.display="none";
 }
+
+if(role!=="Supervisor"){
+btnDashboard.style.display="none";
+}
+
 }
 
 // LISTAS
@@ -201,21 +184,17 @@ fetch(BASE_URL+"?action=getListas")
 .then(r=>r.text())
 .then(t=>{
 
-logDebug("LISTAS: "+t);
-
 maquina.innerHTML="";
 proyecto.innerHTML="";
 tipo.innerHTML="";
 
 t.split("\n").forEach(l=>{
-
 if(!l)return;
 const f=l.split("|");
 
 if(f[0]==="MAQUINA") maquina.innerHTML+=`<option>${f[1]}</option>`;
 if(f[0]==="PROYECTO") proyecto.innerHTML+=`<option>${f[1]}</option>`;
 if(f[0]==="AVERIA") tipo.innerHTML+=`<option>${f[1]}</option>`;
-
 });
 
 });
@@ -235,38 +214,17 @@ tipo:tipo.value,
 descripcion:desc.value
 })
 })
-.then(r=>r.text())
-.then(t=>{
-logDebug("AVISO: "+t);
-alert("Aviso creado");
-loadData();
-});
+.then(()=>loadAvisos());
 }
 
 // CREAR OT
 function crearOT(){
 
-fetch(BASE_URL,{
-method:"POST",
-body:new URLSearchParams({
-action:"crearOT",
-maquina:maquina.value,
-proyecto:proyecto.value,
-descripcion:desc.value
-})
-})
-.then(r=>r.text())
-.then(t=>{
+localStorage.setItem("ot_maquina",maquina.value);
+localStorage.setItem("ot_proyecto",proyecto.value);
+localStorage.setItem("ot_desc",desc.value);
 
-logDebug("OT: "+t);
-
-if(t==="OK"){
 window.location.href="ot.html";
-}else{
-alert("Error OT");
-}
-
-});
 }
 
 // AVISOS
@@ -283,16 +241,14 @@ t.split("\n").forEach((r,i)=>{
 if(!r)return;
 
 const f=r.split("|");
-
 const row=i+2;
 
 avisos.innerHTML+=`
 <div class="card">
 <b>${f[3]}</b> - ${f[5]}<br>
-Usuario: ${f[2]} | Fecha: ${f[1]}<br><br>
+Usuario: ${f[2]}<br><br>
 
-${role!=="Produccion" ? `<button class="green" onclick="convertirAviso(${row})">Convertir OT</button>`:""}
-
+<button class="green" onclick="convertirAviso(${row}, '${f.join("||")}')">Convertir OT</button>
 <button class="red" onclick="eliminarAviso(${row})">Eliminar</button>
 </div>`;
 });
@@ -300,57 +256,41 @@ ${role!=="Produccion" ? `<button class="green" onclick="convertirAviso(${row})">
 });
 }
 
-// OTs
-function loadOTs(){
-
-fetch(BASE_URL+"?action=getOTs")
-.then(r=>r.text())
-.then(t=>{
-
-ots.innerHTML="";
-
-t.split("\n").forEach(r=>{
-if(!r)return;
-const f=r.split("|");
-ots.innerHTML+=`<div class="card">OT ${f[0]}</div>`;
-});
-
-});
-}
-
-// CONVERTIR
-function convertirAviso(row){
-
-logDebug("Convertir fila "+row);
+// CONVERTIR + ABRIR OT
+function convertirAviso(row,data){
 
 fetch(BASE_URL+`?action=convertirAviso&row=${row}&usuario=${currentUser}`)
 .then(r=>r.text())
 .then(t=>{
-logDebug("RESP CONVERTIR: "+t);
-alert("Aviso convertido");
-loadData();
+
+logDebug("Convertido "+t);
+
+// guardamos datos aviso
+localStorage.setItem("aviso_data",data);
+
+// abrir OT
+window.location.href="ot.html";
+
 });
 }
 
 // ELIMINAR
 function eliminarAviso(row){
 
-logDebug("Eliminar fila "+row);
-
 fetch(BASE_URL+`?action=rechazarAviso&row=${row}&usuario=${currentUser}`)
-.then(r=>r.text())
-.then(t=>{
-logDebug("RESP ELIMINAR: "+t);
-alert("Aviso eliminado");
-loadData();
-});
+.then(()=>loadAvisos());
 }
 
-// LOAD
-function loadData(){
-loadAvisos();
-loadOTs();
+// NAV
+function irPendientes(){
+window.location.href="pendientes.html";
 }
+
+function irDashboard(){
+window.location.href="dashboard.html";
+}
+
+function logout(){ location.reload(); }
 
 </script>
 
