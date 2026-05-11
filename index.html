@@ -67,19 +67,22 @@ margin-top:10px;
 <div class="overlay">
 <div class="container">
 
+<!-- LOGIN -->
 <div id="loginBox" class="card">
 <h2>Login</h2>
-<input id="usuario">
-<input id="password" type="password">
+<input id="usuario" placeholder="Usuario">
+<input id="password" type="password" placeholder="Contraseña">
 <button onclick="login()">Entrar</button>
 </div>
 
+<!-- MAIN -->
 <div id="mainBox" class="hidden">
 
 <div class="card">
 <button class="btn-red" onclick="logout()">Cerrar sesión</button>
 </div>
 
+<!-- NUEVO AVISO -->
 <div class="card">
 
 <h3>Nuevo Aviso</h3>
@@ -87,7 +90,7 @@ margin-top:10px;
 <label>Máquina</label>
 <select id="maquina"></select>
 
-<label>Avería</label>
+<label>Tipo avería</label>
 <select id="tipoAveria"></select>
 
 <label>Proyecto</label>
@@ -98,18 +101,23 @@ margin-top:10px;
 
 <button class="btn-yellow" onclick="crearAviso()">Crear Aviso</button>
 
+<p id="msgAviso" style="color:#00ff88;"></p>
+
 </div>
 
-<div class="card">
+<!-- OT -->
+<div id="otBox" class="card hidden">
+<button class="btn-blue" onclick="crearOT()">Generar OT</button>
+</div>
 
+<!-- AVISOS -->
+<div class="card">
 <h3>Avisos pendientes</h3>
 <div id="listaAvisos"></div>
-
 </div>
 
 </div>
 
-</div>
 </div>
 
 <script>
@@ -135,8 +143,16 @@ mainBox.classList.remove("hidden");
 await loadListas();
 loadAvisos();
 
+/* permisos OT */
+if(USER.rol==="Produccion"){
+otBox.classList.add("hidden");
+}else{
+otBox.classList.remove("hidden");
 }
 
+}
+
+/* LISTAS */
 async function loadListas(){
 
 const r=await fetch(`${API}?action=getListas`);
@@ -155,7 +171,9 @@ function fill(id,key){
 const s=document.getElementById(id);
 s.innerHTML="";
 
-(LISTAS[key]||[]).forEach(v=>{
+(LISTAS[key]||[])
+.filter(v=>v && v.trim()!=="")
+.forEach(v=>{
 let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
@@ -168,7 +186,8 @@ s.appendChild(o);
 async function crearAviso(){
 
 if(!descripcion.value.trim()){
-return alert("Descripción obligatoria");
+alert("Descripción obligatoria");
+return;
 }
 
 await fetch(API,{
@@ -184,6 +203,10 @@ descripcion:descripcion.value
 });
 
 descripcion.value="";
+msgAviso.innerText="✔ Aviso creado";
+
+setTimeout(()=>msgAviso.innerText="",3000);
+
 loadAvisos();
 
 }
@@ -204,14 +227,21 @@ let div=document.createElement("div");
 div.className="aviso";
 div.id=a.avisoID;
 
-let acciones=`<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>
-<button class="btn-red" onclick="eliminar('${a.avisoID}')">Eliminar aviso</button>`;
+let botones="";
+
+/* CONVERTIR */
+if(USER.rol!=="Produccion"){
+botones+=`<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>`;
+}
+
+/* ELIMINAR */
+botones+=`<button class="btn-red" onclick="eliminar('${a.avisoID}')">Eliminar aviso</button>`;
 
 div.innerHTML=`
 <b>${a.maquina}</b><br>
 ${a.tipoAveria}<br>
 ${a.descripcion}<br><br>
-${acciones}
+${botones}
 `;
 
 listaAvisos.appendChild(div);
@@ -220,7 +250,7 @@ listaAvisos.appendChild(div);
 
 }
 
-/* ELIMINAR AVISO (RECHAZADO) */
+/* ELIMINAR (RECHAZO) */
 async function eliminar(id){
 
 await fetch(API,{
@@ -240,6 +270,11 @@ document.getElementById(id)?.remove();
 /* CONVERTIR */
 function convertir(id){
 location.href=`ot.html?aviso=${id}`;
+}
+
+/* OT */
+function crearOT(){
+location.href="ot.html";
 }
 
 function logout(){
