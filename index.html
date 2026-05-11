@@ -15,27 +15,28 @@ background:url('op.png') center/cover fixed;
 .overlay{
 background:rgba(0,0,0,0.55);
 min-height:100vh;
-padding:15px;
+padding:10px;
 }
 
 .card{
 background:rgba(0,0,0,0.8);
-padding:15px;
+padding:12px;
 border-radius:12px;
-margin-bottom:15px;
+margin-bottom:12px;
 color:white;
 }
 
 input,select,textarea,button{
 width:100%;
-padding:12px;
+padding:10px;
 margin-top:6px;
 border:none;
 border-radius:8px;
-font-size:16px;
+font-size:15px;
+max-width:100%;
 }
 
-textarea{min-height:90px;}
+textarea{min-height:80px;}
 
 .btn-yellow{background:#fbc02d;}
 .btn-red{background:#d32f2f;color:white;}
@@ -47,6 +48,7 @@ background:#222;
 padding:10px;
 margin-top:10px;
 border-radius:8px;
+word-break:break-word;
 }
 
 .hidden{display:none;}
@@ -59,8 +61,8 @@ border-radius:8px;
 
 <div id="loginBox" class="card">
 <h2>Login</h2>
-<input id="usuario" placeholder="Usuario">
-<input id="password" type="password" placeholder="Contraseña">
+<input id="usuario">
+<input id="password" type="password">
 <button onclick="login()">Entrar</button>
 </div>
 
@@ -71,6 +73,7 @@ border-radius:8px;
 </div>
 
 <div class="card">
+
 <h3>Nuevo Aviso</h3>
 
 <label>Máquina</label>
@@ -87,7 +90,6 @@ border-radius:8px;
 
 <button class="btn-yellow" onclick="crearAviso()">Crear Aviso</button>
 
-<p id="msg"></p>
 </div>
 
 <div id="otBox" class="card hidden">
@@ -126,11 +128,7 @@ mainBox.classList.remove("hidden");
 await loadListas();
 loadAvisos();
 
-if(USER.rol==="Produccion"){
-otBox.classList.add("hidden");
-}else{
-otBox.classList.remove("hidden");
-}
+otBox.classList.toggle("hidden", USER.rol==="Produccion");
 
 }
 
@@ -153,8 +151,7 @@ function fill(id,key){
 const s=document.getElementById(id);
 s.innerHTML="";
 
-(LISTAS[key]||[])
-.forEach(v=>{
+(LISTAS[key]||[]).forEach(v=>{
 let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
@@ -163,7 +160,38 @@ s.appendChild(o);
 
 }
 
-/* AVISO */
+/* AVISOS SOLO PENDIENTES */
+async function loadAvisos(){
+
+const r=await fetch(API+"?action=getAvisos");
+const d=await r.json();
+
+lista.innerHTML="";
+
+(d.avisos||[])
+.filter(a=>a.estado==="Pendiente")
+.forEach(a=>{
+
+let div=document.createElement("div");
+div.className="aviso";
+div.id=a.avisoID;
+
+div.innerHTML=`
+<b>${a.maquina}</b><br>
+${a.tipoAveria}<br>
+${a.descripcion}<br><br>
+
+<button class="btn-orange" onclick="convertir('${a.avisoID}')">OT</button>
+<button class="btn-red" onclick="rechazar('${a.avisoID}')">Eliminar</button>
+`;
+
+lista.appendChild(div);
+
+});
+
+}
+
+/* CREAR AVISO */
 async function crearAviso(){
 
 if(!descripcion.value.trim()){
@@ -182,45 +210,12 @@ descripcion:descripcion.value
 })
 });
 
-msg.innerText="✔ Aviso creado";
-
 descripcion.value="";
 loadAvisos();
 
 }
 
-/* AVISOS */
-async function loadAvisos(){
-
-const r=await fetch(API+"?action=getAvisos");
-const d=await r.json();
-
-lista.innerHTML="";
-
-(d.avisos||[])
-.filter(a=>a.estado!=="Rechazado" && a.estado!=="Convertido")
-.forEach(a=>{
-
-let div=document.createElement("div");
-div.className="aviso";
-div.id=a.avisoID;
-
-div.innerHTML=`
-<b>${a.maquina}</b><br>
-${a.tipoAveria}<br>
-${a.descripcion}<br><br>
-
-<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>
-<button class="btn-red" onclick="rechazar('${a.avisoID}')">Eliminar</button>
-`;
-
-lista.appendChild(div);
-
-});
-
-}
-
-/* RECHAZO */
+/* RECHAZAR */
 async function rechazar(id){
 
 await fetch(API,{

@@ -15,31 +15,48 @@ background:url('op.png') center/cover fixed;
 .overlay{
 background:rgba(0,0,0,0.55);
 min-height:100vh;
-padding:15px;
+padding:10px;
 }
 
 .card{
 background:rgba(0,0,0,0.8);
-padding:15px;
+padding:12px;
 border-radius:12px;
-margin-bottom:15px;
+margin-bottom:12px;
 color:white;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
 }
 
 input,select,textarea,button{
 width:100%;
-padding:12px;
+padding:10px;
 margin-top:6px;
 border:none;
 border-radius:8px;
-font-size:16px;
+font-size:15px;
+max-width:100%;
 }
 
-textarea{min-height:90px;}
+textarea{min-height:80px;}
 
-.btn-red{background:#d32f2f;color:white;}
 .btn-orange{background:#f57c00;color:black;}
+.btn-red{background:#d32f2f;color:white;}
 
+.row{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+}
+
+.row > *{
+flex:1;
+min-width:120px;
+}
 </style>
 </head>
 
@@ -69,6 +86,12 @@ textarea{min-height:90px;}
 <option>CERRADA</option>
 </select>
 
+<label>Código avería</label>
+<input id="codigoAveria">
+
+<label>Tiempo intervención</label>
+<input id="tiempoIntervencion" type="number">
+
 </div>
 
 <div class="card">
@@ -84,8 +107,24 @@ textarea{min-height:90px;}
 </div>
 
 <div class="card">
-<label>Descripción</label>
-<textarea id="desc"></textarea>
+
+<label>Descripción crear</label>
+<textarea id="descCrear"></textarea>
+
+<label>Descripción cerrar</label>
+<textarea id="descCerrar"></textarea>
+
+<label>Planificar</label>
+<select id="plan">
+<option>NO</option>
+<option>SI</option>
+</select>
+
+<div id="planBox" class="hidden">
+<label>Planificar acción</label>
+<textarea id="planAccion"></textarea>
+</div>
+
 </div>
 
 <div class="card">
@@ -102,11 +141,9 @@ let LISTAS={};
 
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u")||"{}");
-if(!u.usuario) location.href="index.html";
-
 const r=await fetch(API+"?action=getListas");
 const d=await r.json();
+
 LISTAS=d.listas||{};
 
 fill(emisorOT,"EMISOR OT");
@@ -135,6 +172,7 @@ sel.appendChild(o);
 function addOp(){
 
 let d=document.createElement("div");
+d.className="row";
 
 let s=document.createElement("select");
 fill(s,"EMISOR OT");
@@ -153,6 +191,7 @@ ops.appendChild(d);
 function addMat(){
 
 let d=document.createElement("div");
+d.className="row";
 
 d.innerHTML=`
 <input placeholder="Material">
@@ -177,7 +216,14 @@ MAQUINA:maquina.value,
 PROYECTO:proyecto.value,
 ESTADO_OT:estado.value,
 
-DESCRIPCION_CREACION:desc.value,
+CODIGO_AVERIA:codigoAveria.value,
+TIEMPO_INTERVENCION:tiempoIntervencion.value,
+
+DESCRIPCION_CREACION:descCrear.value,
+DESCRIPCION_CIERRE:descCerrar.value,
+
+PLANIFICAR:plan.value,
+PLANIFICAR_ACCION:planAccion.value,
 
 OPERARIOS:[...ops.querySelectorAll("div")].map(d=>({
 NOMBRE:d.children[0].value,
