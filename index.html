@@ -1,376 +1,321 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión de Avisos OP Mobility Pedrola</title>
+
+<title>Gestión Avisos</title>
 
 <style>
+
 body{
-  margin:0;
-  font-family:Segoe UI;
-  background:url('op.png') no-repeat center center fixed;
-  background-size:cover;
+font-family:Arial;
+margin:0;
+padding:0;
+background:url('op.png');
+background-size:cover;
+background-position:center;
+min-height:100vh;
+color:white;
 }
 
-.overlay{
-  background:rgba(255,255,255,0.92);
-  min-height:100vh;
-}
-
-/* HEADER */
-.header{
-  background:#003366;
-  color:white;
-  padding:10px 15px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.menu{
-  display:flex;
-  gap:10px;
-}
-
-.menu button{
-  background:white;
-  color:#003366;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-.logout{
-  background:white;
-  color:#003366;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-/* CONTENEDOR */
 .container{
-  max-width:900px;
-  margin:15px auto;
-  background:white;
-  padding:15px;
-  border-radius:10px;
-  box-shadow:0 4px 10px rgba(0,0,0,0.2);
+background:rgba(0,0,0,0.75);
+margin:10px;
+padding:20px;
+border-radius:10px;
 }
 
-input, select, button{
-  width:100%;
-  padding:10px;
-  margin:6px 0;
-  border-radius:6px;
-  border:1px solid #ccc;
+input,select,textarea,button{
+width:100%;
+margin-top:10px;
+padding:12px;
+border:none;
+border-radius:6px;
+font-size:16px;
+box-sizing:border-box;
 }
 
-/* BOTONES */
-.btn{
-  background:#003366;
-  color:white;
-  border:none;
-  cursor:pointer;
+button{
+background:#1976d2;
+color:white;
+font-weight:bold;
 }
 
-.btn:hover{
-  background:#0055aa;
-}
-
-.btn-danger{
-  background:#dc3545;
-  color:white;
-  border:none;
-  cursor:pointer;
-}
-
-.btn-ok{
-  background:#28a745;
-  color:white;
-  border:none;
-  cursor:pointer;
-}
-
-/* CARD */
 .card{
-  border:1px solid #ddd;
-  padding:12px;
-  margin:10px 0;
-  border-radius:8px;
-  background:#fafafa;
+background:#222;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
 }
 
-.desc{
-  font-weight:bold;
-  font-size:15px;
-  margin:6px 0;
+.hidden{
+display:none;
 }
 
-/* DEBUG */
-#debugBox{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  max-height:180px;
-  overflow:auto;
-  background:black;
-  color:#00ff00;
-  font-size:12px;
-  padding:8px;
-  display:none;
-}
 </style>
-</head>
 
+</head>
 <body>
 
-<div class="overlay">
+<div class="container" id="loginBox">
 
-<div id="debugBox"></div>
+<h2>Login</h2>
 
-<!-- LOGIN -->
-<div id="loginBox" class="container">
-<h2>Bienvenido al sistema de gestión de avisos</h2>
-<input id="user" placeholder="Usuario">
-<input id="pass" type="password" placeholder="Password">
-<button class="btn" onclick="login()">Entrar</button>
-</div>
+<input id="usuario" placeholder="Usuario">
+<input id="password" type="password" placeholder="Password">
 
-<!-- APP -->
-<div id="app" style="display:none;">
-
-<div class="header">
-
-<div class="menu">
-<button onclick="irPendientes()">Avisos convertidos</button>
-<button id="btnDashboard" onclick="irDashboard()">Dashboard</button>
-</div>
-
-<button class="logout" onclick="logout()">Cerrar sesión</button>
+<button onclick="login()">Entrar</button>
 
 </div>
 
-<div class="container">
+<div class="container hidden" id="mainBox">
 
-<h3>Generar Aviso / OT</h3>
+<button onclick="logout()">Cerrar sesión</button>
+
+<h2>Nuevo Aviso</h2>
 
 <select id="maquina"></select>
-<select id="proyecto"></select>
-<select id="tipo"></select>
 
-<input id="desc" placeholder="Descripción">
+<select id="tipoAveria"></select>
 
-<button id="btnAviso" class="btn" onclick="crearAviso()">Generar Aviso</button>
-<button id="btnOT" class="btn" onclick="crearOT()">Generar OT</button>
+<input id="proyecto" placeholder="Proyecto">
+
+<textarea id="descripcion" placeholder="Descripción"></textarea>
+
+<button onclick="crearAviso()">Crear Aviso</button>
+
+<div id="otDirecta" class="hidden">
+
+<h2>Crear OT directa</h2>
+
+<button onclick="crearOTDirecta()">Nueva OT</button>
 
 </div>
 
-<div class="container">
-<h3>Avisos pendientes</h3>
-<div id="avisos"></div>
-</div>
+<div id="avisosPendientes" class="hidden">
+
+<h2>Avisos Pendientes</h2>
+
+<div id="listaAvisos"></div>
 
 </div>
+
 </div>
 
 <script>
 
-const BASE_URL = "https://script.google.com/macros/s/AKfycbzV4pdlfcXUf6gyAv51ZSGZkSoe9qeeL8kOD_vV2QbyY_HTDm9tz99l9PiHMZb7FnTu/exec";
+const API = "https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
-let currentUser = null;
-let role = null;
+let USER = null;
 
-/* DEBUG */
-function logDebug(m){
-  const d=document.getElementById("debugBox");
-  d.style.display="block";
-  d.innerHTML+="<div>> "+m+"</div>";
+let LISTAS = {};
+
+async function login(){
+
+const usuario=document.getElementById("usuario").value;
+const password=document.getElementById("password").value;
+
+const r=await fetch(`${API}?action=login&usuario=${usuario}&password=${password}`);
+
+const d=await r.json();
+
+if(!d.ok){
+alert(d.error);
+return;
 }
 
-/* LOGIN */
-function login(){
+USER=d;
 
-fetch(`${BASE_URL}?action=login&user=${user.value}&pass=${pass.value}`)
-.then(r=>r.text())
-.then(t=>{
+localStorage.setItem("user",JSON.stringify(d));
 
-const p=t.split("|");
+document.getElementById("loginBox").classList.add("hidden");
+document.getElementById("mainBox").classList.remove("hidden");
 
-if(p[0]==="OK"){
-currentUser=user.value;
-role=p[2];
+await cargarListas();
 
-loginBox.style.display="none";
-app.style.display="block";
+if(USER.rol=="Supervisor" || USER.rol=="Técnico"){
 
-applyRoles();
-loadLists();
-loadAvisos();
+document.getElementById("otDirecta").classList.remove("hidden");
 
-}else{
-alert("Login incorrecto");
-}
+document.getElementById("avisosPendientes").classList.remove("hidden");
 
-});
-}
-
-/* ROLES */
-function applyRoles(){
-
-if(role==="Produccion"){
-btnOT.style.display="none";
-btnDashboard.style.display="none";
-}
+cargarAvisos();
 
 }
 
-/* LISTAS */
-function loadLists(){
-
-fetch(BASE_URL+"?action=getListas")
-.then(r=>r.text())
-.then(t=>{
-
-maquina.innerHTML="";
-proyecto.innerHTML="";
-tipo.innerHTML="";
-
-t.split("\n").forEach(l=>{
-if(!l)return;
-const f=l.split("|");
-
-if(f[0]==="MAQUINA") maquina.innerHTML+=`<option>${f[1]}</option>`;
-if(f[0]==="PROYECTO") proyecto.innerHTML+=`<option>${f[1]}</option>`;
-if(f[0]==="AVERIA") tipo.innerHTML+=`<option>${f[1]}</option>`;
-});
-
-});
-}
-
-/* CREAR AVISO */
-function crearAviso(){
-
-fetch(BASE_URL,{
-method:"POST",
-body:new URLSearchParams({
-action:"crearAviso",
-usuario:currentUser,
-maquina:maquina.value,
-proyecto:proyecto.value,
-tipo:tipo.value,
-descripcion:desc.value
-})
-})
-.then(r=>r.text())
-.then(t=>{
-alert("Aviso registrado");
-desc.value="";
-loadAvisos();
-});
-}
-
-/* CREAR OT */
-function crearOT(){
-
-localStorage.setItem("ot_maquina",maquina.value);
-localStorage.setItem("ot_proyecto",proyecto.value);
-localStorage.setItem("ot_desc",desc.value);
-
-window.location.href="ot.html";
-}
-
-/* =========================
-   AVISOS (FIX DEFINITIVO)
-========================= */
-function loadAvisos(){
-
-fetch(BASE_URL+"?action=getAvisos")
-.then(r=>r.text())
-.then(t=>{
-
-avisos.innerHTML="";
-
-t.split("\n").forEach(r=>{
-
-if(!r) return;
-
-const f = r.split("|");
-const row = f[0];
-
-const card = document.createElement("div");
-card.className = "card";
-
-card.innerHTML = `
-<div><b>Máquina:</b> ${f[3]}</div>
-<div><b>Fecha:</b> ${new Date(f[1]).toLocaleString()}</div>
-<div class="desc">${f[6]}</div>
-<div><b>Usuario:</b> ${f[2]}</div>
-
-<button class="btn-ok">Convertir a OT</button>
-<button class="btn-danger">Eliminar</button>
-`;
-
-/* CONVERTIR */
-card.querySelector(".btn-ok").onclick = function(){
-
-logDebug("CONVERTIR " + row);
-
-fetch(BASE_URL+"?action=convertirAviso&row="+row+"&usuario="+currentUser)
-.then(r=>r.text())
-.then(t=>{
-
-logDebug("RESP: "+t);
-
-localStorage.setItem("aviso_data", f.join("||"));
-
-card.remove();
-
-window.location.href="ot.html";
-
-});
-
-};
-
-/* ELIMINAR */
-card.querySelector(".btn-danger").onclick = function(){
-
-logDebug("ELIMINAR " + row);
-
-fetch(BASE_URL+"?action=rechazarAviso&row="+row+"&usuario="+currentUser)
-.then(r=>r.text())
-.then(t=>{
-
-logDebug("RESP: "+t);
-
-card.remove();
-
-});
-
-};
-
-avisos.appendChild(card);
-
-});
-
-});
-}
-
-/* NAV */
-function irPendientes(){
-window.location.href="pendientes.html";
-}
-
-function irDashboard(){
-window.location.href="dashboard.html";
 }
 
 function logout(){
+
+localStorage.clear();
 location.reload();
+
+}
+
+async function cargarListas(){
+
+const r=await fetch(`${API}?action=getListas`);
+
+const d=await r.json();
+
+LISTAS=d.listas;
+
+cargarSelect("maquina","MAQUINA");
+cargarSelect("tipoAveria","AVERIA");
+
+}
+
+function cargarSelect(id,tipo){
+
+const s=document.getElementById(id);
+
+s.innerHTML="";
+
+LISTAS[tipo].forEach(v=>{
+
+const o=document.createElement("option");
+
+o.value=v;
+o.textContent=v;
+
+s.appendChild(o);
+
+});
+
+}
+
+async function crearAviso(){
+
+const body={
+
+action:"crearAviso",
+usuario:USER.usuario,
+maquina:maquina.value,
+proyecto:proyecto.value,
+tipoAveria:tipoAveria.value,
+descripcion:descripcion.value
+
+};
+
+const r=await fetch(API,{
+method:"POST",
+body:JSON.stringify(body)
+});
+
+const d=await r.json();
+
+if(d.ok){
+
+alert("Aviso creado");
+
+descripcion.value="";
+
+}
+
+}
+
+function crearOTDirecta(){
+
+location.href="ot.html";
+
+}
+
+async function cargarAvisos(){
+
+const r=await fetch(`${API}?action=getAvisos`);
+
+const d=await r.json();
+
+const cont=document.getElementById("listaAvisos");
+
+cont.innerHTML="";
+
+d.avisos.forEach(a=>{
+
+const div=document.createElement("div");
+
+div.className="card";
+
+div.innerHTML=`
+
+<b>${a.maquina}</b><br>
+${a.tipoAveria}<br>
+${a.descripcion}<br><br>
+
+<button onclick="convertirAviso('${a.avisoID}')">Convertir a OT</button>
+
+<button onclick="rechazarAviso('${a.avisoID}')">Eliminar aviso</button>
+
+`;
+
+cont.appendChild(div);
+
+});
+
+}
+
+async function convertirAviso(id){
+
+const r=await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"convertirAviso",
+avisoID:id,
+emisor:USER.emisor
+})
+});
+
+const d=await r.json();
+
+if(d.ok){
+
+location.href=`ot.html?ot=${d.ot}`;
+
+}
+
+}
+
+async function rechazarAviso(id){
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"rechazarAviso",
+avisoID:id,
+usuario:USER.usuario
+})
+});
+
+cargarAvisos();
+
+}
+
+window.onload=()=>{
+
+const u=localStorage.getItem("user");
+
+if(u){
+
+USER=JSON.parse(u);
+
+document.getElementById("loginBox").classList.add("hidden");
+document.getElementById("mainBox").classList.remove("hidden");
+
+cargarListas();
+
+if(USER.rol=="Supervisor" || USER.rol=="Técnico"){
+
+document.getElementById("otDirecta").classList.remove("hidden");
+document.getElementById("avisosPendientes").classList.remove("hidden");
+
+cargarAvisos();
+
+}
+
+}
+
 }
 
 </script>
