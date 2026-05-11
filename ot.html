@@ -6,7 +6,26 @@
 <title>OT</title>
 
 <style>
-*{box-sizing:border-box;}
+
+*{
+box-sizing:border-box;
+}
+
+:root{
+--bg-overlay:rgba(0,0,0,.55);
+--card-bg:rgba(0,0,0,.82);
+--text:#fff;
+--input-bg:#fff;
+--input-text:#000;
+}
+
+body.light{
+--bg-overlay:rgba(255,255,255,.72);
+--card-bg:rgba(255,255,255,.92);
+--text:#111;
+--input-bg:#fff;
+--input-text:#000;
+}
 
 body{
 margin:0;
@@ -15,17 +34,17 @@ background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,.55);
+background:var(--bg-overlay);
 min-height:100vh;
 padding:10px;
 }
 
 .card{
-background:rgba(0,0,0,.82);
+background:var(--card-bg);
 padding:14px;
 border-radius:12px;
 margin-bottom:12px;
-color:#fff;
+color:var(--text);
 }
 
 label{
@@ -42,6 +61,8 @@ margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:16px;
+background:var(--input-bg);
+color:var(--input-text);
 }
 
 textarea{
@@ -60,24 +81,47 @@ flex-wrap:wrap;
 margin-top:10px;
 }
 
-.row > *{
+.row>*{
 flex:1;
 min-width:120px;
 }
 
 .btn-orange{
 background:#f57c00;
+color:#000;
+}
+
+.btn-red{
+background:#d32f2f;
+color:#fff;
 }
 
 .hidden{
 display:none;
 }
+
 </style>
 </head>
 
 <body>
 
 <div class="overlay">
+
+<div class="card">
+
+<div class="row">
+
+<button class="btn-red" onclick="logout()">
+Cerrar sesión
+</button>
+
+<button onclick="toggleTheme()">
+Modo oscuro/claro
+</button>
+
+</div>
+
+</div>
 
 <div class="card">
 
@@ -92,7 +136,7 @@ display:none;
 <label>Proyecto</label>
 <select id="proyecto"></select>
 
-<label>Código avería</label>
+<label>Tipo avería</label>
 <select id="codigoAveria"></select>
 
 <label>Hora</label>
@@ -109,7 +153,9 @@ display:none;
 
 <div id="ops"></div>
 
-<button onclick="addOp()">Añadir operario</button>
+<button onclick="addOp()">
+Añadir operario
+</button>
 
 </div>
 
@@ -119,7 +165,9 @@ display:none;
 
 <div id="mats"></div>
 
-<button onclick="addMat()">Añadir material</button>
+<button onclick="addMat()">
+Añadir material
+</button>
 
 </div>
 
@@ -147,9 +195,11 @@ display:none;
 </div>
 
 <div class="card">
+
 <button class="btn-orange" onclick="guardarOT()">
 Guardar OT
 </button>
+
 </div>
 
 </div>
@@ -161,24 +211,58 @@ const API="https://script.google.com/macros/s/AKfycbxBBEkO8vTGZwTLiqza1edNp1V47n
 let LISTAS={};
 
 /* =========================
+   TEMA
+========================= */
+
+function toggleTheme(){
+
+document.body.classList.toggle("light");
+
+localStorage.setItem(
+"theme",
+document.body.classList.contains("light")
+? "light"
+: "dark"
+);
+
+}
+
+(function(){
+
+const t=localStorage.getItem("theme");
+
+if(t==="light"){
+document.body.classList.add("light");
+}
+
+})();
+
+/* =========================
    INIT
 ========================= */
+
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u")||"{}");
+const USER=JSON.parse(localStorage.getItem("u")||"{}");
 
-if(!u.usuario){
+if(!USER.usuario){
+
 location.href="index.html";
 return;
+
 }
 
 /* PRODUCCION BLOQUEADO */
-if(u.rol==="Produccion"){
+
+if(USER.rol==="Produccion"){
+
 location.href="index.html";
 return;
+
 }
 
 const r=await fetch(API+"?action=getListas");
+
 const d=await r.json();
 
 LISTAS=d.listas||{};
@@ -189,21 +273,24 @@ fill(proyecto,"PROYECTO");
 fill(codigoAveria,"AVERIA");
 
 /* EMISOR DEFAULT */
-if(u.emisor){
-emisorOT.value=u.emisor;
+
+if(USER.emisor){
+emisorOT.value=USER.emisor;
 }
 
 addOp();
 addMat();
 
-/* CARGA DESDE AVISO */
-loadAviso();
+/* CARGAR AVISO */
+
+await loadAviso();
 
 }
 
 /* =========================
    FILL
 ========================= */
+
 function fill(select,key){
 
 select.innerHTML="";
@@ -211,6 +298,7 @@ select.innerHTML="";
 (LISTAS[key]||[]).forEach(v=>{
 
 let o=document.createElement("option");
+
 o.value=v;
 o.textContent=v;
 
@@ -221,45 +309,59 @@ select.appendChild(o);
 }
 
 /* =========================
-   CARGAR AVISO
+   CARGAR DATOS AVISO
 ========================= */
+
 async function loadAviso(){
 
 const params=new URLSearchParams(location.search);
+
 const avisoID=params.get("aviso");
 
 if(!avisoID) return;
 
 const r=await fetch(API+"?action=getAvisos");
+
 const d=await r.json();
 
 const aviso=(d.avisos||[]).find(a=>a.avisoID===avisoID);
 
 if(!aviso) return;
 
-maquina.value=aviso.maquina;
-proyecto.value=aviso.proyecto;
-codigoAveria.value=aviso.tipoAveria;
-descCrear.value=aviso.descripcion;
+/* CARGAR DATOS */
+
+maquina.value=aviso.maquina || "";
+proyecto.value=aviso.proyecto || "";
+codigoAveria.value=aviso.tipoAveria || "";
+descCrear.value=aviso.descripcion || "";
 
 }
 
 /* =========================
    OPERARIOS
 ========================= */
+
 function addOp(){
 
 if(ops.children.length>=6){
+
 alert("Máximo 6 operarios");
 return;
+
 }
 
 let div=document.createElement("div");
+
 div.className="row";
 
 div.innerHTML=`
+
 <select class="opSel"></select>
-<input type="number" class="opTime" placeholder="Tiempo">
+
+<input type="number"
+class="opTime"
+placeholder="Tiempo">
+
 `;
 
 ops.appendChild(div);
@@ -271,19 +373,29 @@ fill(div.querySelector(".opSel"),"EMISOR OT");
 /* =========================
    MATERIALES
 ========================= */
+
 function addMat(){
 
 if(mats.children.length>=4){
+
 alert("Máximo 4 materiales");
 return;
+
 }
 
 let div=document.createElement("div");
+
 div.className="row";
 
 div.innerHTML=`
-<input class="matName" placeholder="Material">
-<input class="matQty" type="number" placeholder="Cantidad">
+
+<input class="matName"
+placeholder="Material">
+
+<input class="matQty"
+type="number"
+placeholder="Cantidad">
+
 `;
 
 mats.appendChild(div);
@@ -293,12 +405,17 @@ mats.appendChild(div);
 /* =========================
    PLANIFICACION
 ========================= */
+
 function togglePlan(){
 
 if(planificar.value==="SI"){
+
 planBox.classList.remove("hidden");
+
 }else{
+
 planBox.classList.add("hidden");
+
 }
 
 }
@@ -306,50 +423,105 @@ planBox.classList.add("hidden");
 /* =========================
    GUARDAR OT
 ========================= */
+
 async function guardarOT(){
 
 if(!descCrear.value.trim()){
-alert("Descripción obligatoria");
+
+alert("La descripción es obligatoria");
 return;
+
 }
 
-const OPERARIOS=[...document.querySelectorAll("#ops .row")].map(r=>({
-NOMBRE:r.querySelector(".opSel").value,
-TIEMPO:r.querySelector(".opTime").value
+/* OPERARIOS */
+
+const OPERARIOS=[...document.querySelectorAll("#ops .row")]
+.map(r=>({
+
+NOMBRE:r.querySelector(".opSel").value || "",
+TIEMPO:r.querySelector(".opTime").value || ""
+
 }));
 
-const MATERIALES=[...document.querySelectorAll("#mats .row")].map(r=>({
-MATERIAL:r.querySelector(".matName").value,
-CANTIDAD:r.querySelector(".matQty").value
+/* MATERIALES */
+
+const MATERIALES=[...document.querySelectorAll("#mats .row")]
+.map(r=>({
+
+MATERIAL:r.querySelector(".matName").value || "",
+CANTIDAD:r.querySelector(".matQty").value || ""
+
 }));
 
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
+/* PAYLOAD EXACTO */
+
+const payload={
 
 action:"crearOT",
 
-EMISOR_OT:emisorOT.value,
-MAQUINA:maquina.value,
-PROYECTO:proyecto.value,
-CODIGO_AVERIA:codigoAveria.value,
+/* OT VACIO */
+OT:"",
 
-HORA:hora.value,
-TIEMPO_INTERVENCION:tiempoInt.value,
+EMISOR_OT:emisorOT.value || "",
+MAQUINA:maquina.value || "",
+PROYECTO:proyecto.value || "",
 
-DESCRIPCION_CREACION:descCrear.value,
-DESCRIPCION_CIERRE:descCerrar.value,
+/* FIX CODIGO AVERIA */
+CODIGO_AVERIA:codigoAveria.value || "",
 
-PLANIFICAR_ACCION:planificar.value,
-DESCRIPCION_PLANIFICACION:planAccion.value,
+HORA:hora.value || "",
 
+/* FIX TIEMPO INT */
+TIEMPO_INTERVENCION:tiempoInt.value || "",
+
+/* FIX DESCRIPCIONES */
+DESCRIPCION_CREACION:descCrear.value || "",
+DESCRIPCION_CIERRE:descCerrar.value || "",
+
+/* FIX PLANIFICACION */
+PLANIFICAR_ACCION:planificar.value || "NO",
+
+DESCRIPCION_PLANIFICACION:
+planificar.value==="SI"
+? planAccion.value || ""
+: "",
+
+/* ARRAYS */
 OPERARIOS,
 MATERIALES
 
-})
+};
+
+const r=await fetch(API,{
+
+method:"POST",
+
+body:JSON.stringify(payload)
+
 });
 
+const d=await r.json();
+
+if(!d.ok){
+
+alert(d.error || "Error guardando OT");
+return;
+
+}
+
 alert("OT guardada");
+
+location.href="index.html";
+
+}
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout(){
+
+localStorage.clear();
 
 location.href="index.html";
 
