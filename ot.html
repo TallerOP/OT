@@ -6,7 +6,6 @@
 <title>OT</title>
 
 <style>
-
 *{box-sizing:border-box;}
 
 body{
@@ -49,11 +48,10 @@ border-radius:8px;
 font-size:16px;
 }
 
-.btn-red{background:#d32f2f;color:white;}
 .btn-orange{background:#f57c00;color:black;}
+.btn-red{background:#d32f2f;color:white;}
 
 .hidden{display:none;}
-
 </style>
 </head>
 
@@ -69,10 +67,7 @@ font-size:16px;
 <h2>Orden de Trabajo</h2>
 
 <label>Emisor OT</label>
-<input id="emisor" readonly>
-
-<label>Usuario 1</label>
-<select id="usuario1"></select>
+<select id="emisorOT"></select>
 
 <label>Hora</label>
 <input id="hora" type="time">
@@ -96,16 +91,28 @@ font-size:16px;
 
 <div class="card">
 
-<h3>Operarios</h3>
-<div id="operarios"></div>
+<h3>Operario 1</h3>
+<select id="op1"></select>
+<input id="t1" type="number" placeholder="Tiempo">
+
 <button onclick="addOperario()">Añadir operario</button>
+
+<div id="opsExtra"></div>
 
 </div>
 
 <div class="card">
 
-<h3>Materiales</h3>
-<div id="materiales"></div>
+<h3>Material 1</h3>
+<input id="m1">
+<input id="q1" type="number">
+
+<button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">
+Escanear material
+</button>
+
+<div id="matExtra"></div>
+
 <button onclick="addMaterial()">Añadir material</button>
 
 </div>
@@ -113,16 +120,7 @@ font-size:16px;
 <div class="card">
 
 <label>Descripción cierre *</label>
-<textarea id="descCerrar"></textarea>
-
-<label>Planificar</label>
-<select id="planificar" onchange="togglePlan()">
-<option>NO</option>
-<option>SI</option>
-</select>
-
-<label id="planLabel" class="hidden">Descripción planificación</label>
-<textarea id="planAccion" class="hidden"></textarea>
+<textarea id="desc"></textarea>
 
 <button class="btn-orange" onclick="guardarOT()">Guardar OT</button>
 
@@ -135,148 +133,113 @@ font-size:16px;
 
 const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
-let LISTAS={};
 let USERS=[];
-let op=0;
-let mat=0;
 
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u"));
+const u=JSON.parse(localStorage.getItem("u")||"{}");
 
 if(u.rol==="Produccion"){
 location.href="index.html";
 return;
 }
 
-emisor.value=u.emisor;
-
-const r=await fetch(`${API}?action=getListas`);
+const r=await fetch(`${API}?action=getUsuarios`);
 const d=await r.json();
-LISTAS=d.listas;
+USERS=d.usuarios;
 
-const ru=await fetch(`${API}?action=getUsuarios`);
-const du=await ru.json();
-USERS=du.usuarios;
-
-fill("maquina","MAQUINA");
-fill("tipoAveria","AVERIA");
-fill("proyecto","PROYECTO");
-
-fillUsuarios(u.emisor);
+fillEmisor(u.emisor);
+fillOps();
 
 addOperario();
 addMaterial();
 
-const aviso=new URLSearchParams(location.search).get("aviso");
-
-if(aviso){
-
-const ra=await fetch(`${API}?action=getAvisos`);
-const da=await ra.json();
-
-let a=da.avisos.find(x=>x.avisoID==aviso);
-
-if(a){
-maquina.value=a.maquina;
-tipoAveria.value=a.tipoAveria;
-proyecto.value=a.proyecto;
 }
 
-}
+function fillEmisor(val){
 
-}
-
-function fill(id,key){
-
-const s=document.getElementById(id);
-s.innerHTML="";
-
-(LISTAS[key]||[]).forEach(v=>{
-let o=document.createElement("option");
-o.value=v;
-o.textContent=v;
-s.appendChild(o);
-});
-
-}
-
-/* USUARIOS */
-function fillUsuarios(defaultVal){
-
-usuario1.innerHTML="";
+emisorOT.innerHTML="";
 
 USERS.forEach(u=>{
 let o=document.createElement("option");
 o.value=u.emisor;
 o.textContent=u.emisor;
-if(u.emisor===defaultVal)o.selected=true;
-usuario1.appendChild(o);
+if(u.emisor===val)o.selected=true;
+emisorOT.appendChild(o);
 });
 
 }
 
-/* OPERARIO 1 SIEMPRE */
-function addOperario(){
+function fillOps(){
 
-if(op>=6)return;
-op++;
+op1.innerHTML="";
+
+USERS.forEach(u=>{
+let o=document.createElement("option");
+o.value=u.emisor;
+o.textContent=u.emisor;
+op1.appendChild(o);
+});
+
+}
+
+/* OPERARIOS */
+function addOperario(){
 
 let div=document.createElement("div");
 
 div.innerHTML=`
-<label>Operario ${op}</label>
 <select>
 ${USERS.map(u=>`<option>${u.emisor}</option>`).join("")}
 </select>
 <input type="number" placeholder="Tiempo">
 `;
 
-operarios.appendChild(div);
+opsExtra.appendChild(div);
 
 }
 
-/* MATERIAL FIX REAL */
+/* MATERIALES */
 function addMaterial(){
-
-if(mat>=4)return;
-mat++;
 
 let div=document.createElement("div");
 
 div.innerHTML=`
-<label>Material ${mat}</label>
-<input>
-<label>Cantidad ${mat}</label>
-<input type="number">
-<button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">Escanear material</button>
+<hr>
+<input placeholder="Material">
+<input type="number" placeholder="Cantidad">
 `;
 
-materiales.appendChild(div);
+matExtra.appendChild(div);
 
 }
 
-/* PLAN */
-function togglePlan(){
-
-if(planificar.value==="SI"){
-planLabel.classList.remove("hidden");
-planAccion.classList.remove("hidden");
-}else{
-planLabel.classList.add("hidden");
-planAccion.classList.add("hidden");
-}
-
-}
-
-/* GUARDAR REAL (FIX MATERIALS INCLUDED) */
+/* GUARDAR REAL EN SHEETS */
 async function guardarOT(){
 
-if(!descCerrar.value.trim()){
+if(!desc.value.trim()){
 return alert("Descripción obligatoria");
 }
 
-alert("OT guardada correctamente");
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"crearOT",
+emisorOT:emisorOT.value,
+hora:hora.value,
+maquina:maquina.value,
+tipoAveria:tipoAveria.value,
+proyecto:proyecto.value,
+estado:estado.value,
+op1:op1.value,
+t1:t1.value,
+m1:m1.value,
+q1:q1.value,
+descripcion:desc.value
+})
+});
+
+alert("OT guardada");
 
 location.href="index.html";
 
