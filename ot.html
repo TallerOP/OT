@@ -22,13 +22,13 @@ padding:15px;
 }
 
 .container{
-max-width:950px;
+max-width:1000px;
 margin:auto;
 color:white;
 }
 
 .card{
-background:rgba(0,0,0,0.78);
+background:rgba(0,0,0,0.80);
 padding:15px;
 border-radius:12px;
 margin-bottom:15px;
@@ -49,10 +49,19 @@ border-radius:8px;
 font-size:16px;
 }
 
+textarea{min-height:100px;}
+
 .btn-red{background:#d32f2f;color:white;}
 .btn-orange{background:#f57c00;color:black;}
+.btn-blue{background:#1976d2;color:white;}
 
 .hidden{display:none;}
+
+.smallbtn{
+margin-top:5px;
+background:#444;
+color:white;
+}
 
 </style>
 </head>
@@ -62,6 +71,7 @@ font-size:16px;
 <div class="overlay">
 <div class="container">
 
+<!-- HEADER -->
 <div class="card">
 
 <button class="btn-red" onclick="logout()">Cerrar sesión</button>
@@ -74,12 +84,6 @@ font-size:16px;
 <label>Hora</label>
 <input id="hora" type="time">
 
-<label>Máquina</label>
-<select id="maquina"></select>
-
-<label>Avería</label>
-<select id="tipoAveria"></select>
-
 <label>Proyecto</label>
 <select id="proyecto"></select>
 
@@ -91,37 +95,51 @@ font-size:16px;
 
 </div>
 
+<!-- OPERARIOS -->
 <div class="card">
 
-<h3>Operario 1</h3>
-<select id="op1"></select>
-<input id="t1" type="number" placeholder="Tiempo">
+<h3>Operarios</h3>
 
-<button onclick="addOperario()">Añadir operario</button>
-<div id="opsExtra"></div>
+<div id="operarios"></div>
+
+<button class="smallbtn" onclick="addOperario()">Añadir operario</button>
 
 </div>
 
+<!-- MATERIALES -->
 <div class="card">
 
-<h3>Material 1</h3>
-<input id="m1" placeholder="Material 1">
-<input id="q1" type="number" placeholder="Cantidad 1">
+<h3>Materiales</h3>
 
-<button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">
-Escanear material
-</button>
+<div id="materiales"></div>
 
-<div id="matExtra"></div>
+<button class="smallbtn" onclick="addMaterial()">Añadir material</button>
 
-<button onclick="addMaterial()">Añadir material</button>
+<button class="btn-blue" onclick="scanMaterial()">Escanear material</button>
 
 </div>
 
+<!-- DESCRIPCIÓN -->
 <div class="card">
 
-<label>Descripción cierre *</label>
-<textarea id="desc"></textarea>
+<label>Descripción cerrar *</label>
+<textarea id="descripcion"></textarea>
+
+<label>Planificar</label>
+<select id="planificar" onchange="togglePlan()">
+<option value="NO">NO</option>
+<option value="SI">SI</option>
+</select>
+
+<div id="planBox" class="hidden">
+<label>Planificar acción</label>
+<textarea id="planAccion"></textarea>
+</div>
+
+</div>
+
+<!-- GUARDAR -->
+<div class="card">
 
 <button class="btn-orange" onclick="guardarOT()">Guardar OT</button>
 
@@ -135,7 +153,12 @@ Escanear material
 const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
 let USERS=[];
+let LISTAS={};
 
+let opCount=1;
+let matCount=1;
+
+/* INIT */
 async function init(){
 
 const user=JSON.parse(localStorage.getItem("u")||"{}");
@@ -145,143 +168,180 @@ location.href="index.html";
 return;
 }
 
-if(user.rol==="Produccion"){
-location.href="index.html";
-return;
-}
+const r1=await fetch(`${API}?action=getUsuarios`);
+const d1=await r1.json();
 
-/* 🔥 CARGA USUARIOS REAL */
-const r=await fetch(`${API}?action=getUsuarios`);
-const data=await r.json();
+USERS=(d1.usuarios||[])
+.filter(u=>u.emisor && u.emisor.trim()!="");
 
-/* FILTRO REAL: elimina filas vacías */
-USERS=(data.usuarios||[])
-.filter(u=>u.emisor && u.emisor.trim()!=="");
+const r2=await fetch(`${API}?action=getListas`);
+const d2=await r2.json();
 
-/* DEBUG opcional
-console.log("USUARIOS CARGADOS:", USERS);
-*/
+LISTAS=d2.listas||{};
 
 loadEmisores(user.emisor);
-loadOperario1(user.emisor);
+loadProyecto();
 
-addOperario();
-addMaterial();
+addOperario();   // Operario 1 fijo
+addMaterial();   // Material 1 fijo
 
 }
 
-/* 🔥 EMISOR OT (dropdown + autoselect) */
+/* EMISOR OT */
 function loadEmisores(defaultVal){
 
 emisorOT.innerHTML="";
 
 USERS.forEach(u=>{
-let opt=document.createElement("option");
-opt.value=u.emisor;
-opt.textContent=u.emisor;
+let o=document.createElement("option");
+o.value=u.emisor;
+o.textContent=u.emisor;
 
 if(u.emisor===defaultVal){
-opt.selected=true;
+o.selected=true;
 }
 
-emisorOT.appendChild(opt);
+emisorOT.appendChild(o);
 });
 
 }
 
-/* 🔥 OPERARIO 1 SIEMPRE FUNCIONAL */
-function loadOperario1(defaultVal){
+/* PROYECTO */
+function loadProyecto(){
 
-op1.innerHTML="";
+proyecto.innerHTML="";
 
-USERS.forEach(u=>{
-let opt=document.createElement("option");
-opt.value=u.emisor;
-opt.textContent=u.emisor;
-
-if(u.emisor===defaultVal){
-opt.selected=true;
-}
-
-op1.appendChild(opt);
+(LISTAS.PROYECTO||[]).forEach(p=>{
+let o=document.createElement("option");
+o.value=p;
+o.textContent=p;
+proyecto.appendChild(o);
 });
 
 }
 
-/* OPERARIOS EXTRA */
+/* OPERARIOS (1-6) */
 function addOperario(){
 
+if(opCount>6)return;
+
 let div=document.createElement("div");
+
+let label=document.createElement("label");
+label.textContent=`Operario ${opCount}`;
 
 let sel=document.createElement("select");
 
 USERS.forEach(u=>{
-let opt=document.createElement("option");
-opt.value=u.emisor;
-opt.textContent=u.emisor;
-sel.appendChild(opt);
+let o=document.createElement("option");
+o.value=u.emisor;
+o.textContent=u.emisor;
+sel.appendChild(o);
 });
 
 let t=document.createElement("input");
 t.type="number";
 t.placeholder="Tiempo";
 
+div.appendChild(label);
 div.appendChild(sel);
 div.appendChild(t);
 
-opsExtra.appendChild(div);
+operarios.appendChild(div);
+
+opCount++;
 
 }
 
-/* MATERIALES */
+/* MATERIALES (1-4) */
 function addMaterial(){
+
+if(matCount>4)return;
 
 let div=document.createElement("div");
 
 div.innerHTML=`
-<hr>
-<input placeholder="Material">
-<input type="number" placeholder="Cantidad">
+<label>Material ${matCount}</label>
+<input class="mat">
+<label>Cantidad ${matCount}</label>
+<input class="qty" type="number">
 `;
 
-matExtra.appendChild(div);
+materiales.appendChild(div);
+
+matCount++;
 
 }
 
-/* GUARDADO OT (estructura estable para Apps Script) */
+/* ESCANER */
+function scanMaterial(){
+
+window.open("https://tallerop.github.io/gestionrecambios/","_blank");
+
+}
+
+/* PLANIFICACIÓN */
+function togglePlan(){
+
+planBox.classList.toggle("hidden", planificar.value==="NO");
+
+}
+
+/* GUARDAR OT REAL */
 async function guardarOT(){
 
-if(!desc.value.trim()){
-alert("Descripción obligatoria");
-return;
+if(!descripcion.value.trim()){
+return alert("Descripción obligatoria");
 }
+
+/* OPERARIOS */
+let ops=[...operarios.querySelectorAll("select")].map(s=>s.value);
+let times=[...operarios.querySelectorAll("input")].map(i=>i.value);
+
+/* MATERIALES */
+let mats=[...materiales.querySelectorAll(".mat")].map(i=>i.value);
+let qtys=[...materiales.querySelectorAll(".qty")].map(i=>i.value);
+
+const user=JSON.parse(localStorage.getItem("u"));
 
 const payload={
 action:"crearOT",
+
 emisorOT:emisorOT.value,
 hora:hora.value,
-maquina:maquina.value,
-tipoAveria:tipoAveria.value,
 proyecto:proyecto.value,
 estado:estado.value,
-operario1:op1.value,
-tiempo1:t1.value,
-material1:m1.value,
-cantidad1:q1.value,
-descripcion:desc.value
+
+descripcion:descripcion.value,
+planificar:planificar.value,
+planAccion:planAccion.value || "",
+
+operarios:ops,
+tiempos:times,
+
+materiales:mats,
+cantidades:qtys,
+
+usuario:user.usuario
 };
 
-await fetch(API,{
+const r=await fetch(API,{
 method:"POST",
 body:JSON.stringify(payload)
 });
 
-alert("OT guardada correctamente");
+const d=await r.json();
 
+if(d.ok){
+alert("OT guardada correctamente");
 location.href="index.html";
+}else{
+alert("Error al guardar OT");
+}
 
 }
 
+/* LOGOUT */
 function logout(){
 localStorage.clear();
 location.href="index.html";
