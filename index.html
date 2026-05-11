@@ -6,26 +6,52 @@
 <title>Gestión Avisos</title>
 
 <style>
-*{box-sizing:border-box;}
+
+*{
+box-sizing:border-box;
+}
+
+:root{
+
+--bg-overlay:rgba(0,0,0,.55);
+--card-bg:rgba(0,0,0,.82);
+--text:#ffffff;
+--input-bg:#ffffff;
+--input-text:#000000;
+
+}
+
+body.light{
+
+--bg-overlay:rgba(255,255,255,.75);
+--card-bg:rgba(255,255,255,.92);
+--text:#111111;
+--input-bg:#ffffff;
+--input-text:#000000;
+
+}
 
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:url('op.png') center/cover fixed;
+transition:.3s;
 }
 
 .overlay{
-background:rgba(0,0,0,.55);
+background:var(--bg-overlay);
 min-height:100vh;
 padding:10px;
+transition:.3s;
 }
 
 .card{
-background:rgba(0,0,0,.82);
+background:var(--card-bg);
 padding:14px;
 border-radius:12px;
 margin-bottom:12px;
-color:#fff;
+color:var(--text);
+transition:.3s;
 }
 
 label{
@@ -42,6 +68,8 @@ margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:16px;
+background:var(--input-bg);
+color:var(--input-text);
 }
 
 textarea{
@@ -53,10 +81,30 @@ button{
 cursor:pointer;
 }
 
-.btn-yellow{background:#fbc02d;}
-.btn-red{background:#d32f2f;color:#fff;}
-.btn-blue{background:#1976d2;color:#fff;}
-.btn-orange{background:#f57c00;color:#000;}
+.btn-yellow{
+background:#fbc02d;
+color:#000;
+}
+
+.btn-red{
+background:#d32f2f;
+color:#fff;
+}
+
+.btn-blue{
+background:#1976d2;
+color:#fff;
+}
+
+.btn-orange{
+background:#f57c00;
+color:#000;
+}
+
+.btn-mode{
+background:#555;
+color:#fff;
+}
 
 .aviso{
 background:#222;
@@ -66,16 +114,20 @@ border-radius:10px;
 overflow-wrap:break-word;
 }
 
+body.light .aviso{
+background:#f1f1f1;
+color:#111;
+}
+
 .rowBtns{
 display:flex;
 gap:8px;
-margin-top:10px;
-flex-wrap:wrap;
+margin-top:12px;
+flex-wrap:nowrap;
 }
 
 .rowBtns button{
-flex:1;
-min-width:120px;
+width:49.95%;
 }
 
 .hidden{
@@ -86,7 +138,9 @@ display:none;
 margin-top:10px;
 color:#00ff90;
 font-weight:bold;
+font-size:16px;
 }
+
 </style>
 </head>
 
@@ -113,7 +167,19 @@ font-weight:bold;
 <div id="mainBox" class="hidden">
 
 <div class="card">
-<button class="btn-red" onclick="logout()">Cerrar sesión</button>
+
+<div class="rowBtns">
+
+<button class="btn-red" onclick="logout()">
+Cerrar sesión
+</button>
+
+<button class="btn-mode" onclick="toggleTheme()">
+Modo oscuro/claro
+</button>
+
+</div>
+
 </div>
 
 <!-- NUEVO AVISO -->
@@ -133,15 +199,20 @@ font-weight:bold;
 <label>Descripción *</label>
 <textarea id="descripcion"></textarea>
 
-<button class="btn-yellow" onclick="crearAviso()">Crear Aviso</button>
+<div class="rowBtns">
 
-<p id="msgAviso"></p>
+<button class="btn-yellow" onclick="crearAviso()">
+Crear aviso
+</button>
+
+<button id="btnGenerarOT" class="btn-blue hidden" onclick="crearOT()">
+Generar OT
+</button>
 
 </div>
 
-<!-- GENERAR OT -->
-<div id="otBox" class="card hidden">
-<button class="btn-blue" onclick="crearOT()">Generar OT</button>
+<p id="msgAviso"></p>
+
 </div>
 
 <!-- AVISOS -->
@@ -165,8 +236,36 @@ let USER=null;
 let LISTAS={};
 
 /* =========================
+   TEMA
+========================= */
+
+function toggleTheme(){
+
+document.body.classList.toggle("light");
+
+localStorage.setItem(
+"theme",
+document.body.classList.contains("light")
+? "light"
+: "dark"
+);
+
+}
+
+(function(){
+
+const theme=localStorage.getItem("theme");
+
+if(theme==="light"){
+document.body.classList.add("light");
+}
+
+})();
+
+/* =========================
    LOGIN
 ========================= */
+
 async function login(){
 
 const r=await fetch(
@@ -188,13 +287,13 @@ loginBox.classList.add("hidden");
 mainBox.classList.remove("hidden");
 
 await loadListas();
+
 loadAvisos();
 
 /* PRODUCCION NO VE OT */
-if(USER.rol==="Produccion"){
-otBox.classList.add("hidden");
-}else{
-otBox.classList.remove("hidden");
+
+if(USER.rol!=="Produccion"){
+btnGenerarOT.classList.remove("hidden");
 }
 
 }
@@ -202,9 +301,11 @@ otBox.classList.remove("hidden");
 /* =========================
    LISTAS
 ========================= */
+
 async function loadListas(){
 
 const r=await fetch(API+"?action=getListas");
+
 const d=await r.json();
 
 LISTAS=d.listas||{};
@@ -222,6 +323,7 @@ select.innerHTML="";
 (LISTAS[key]||[]).forEach(v=>{
 
 let o=document.createElement("option");
+
 o.value=v;
 o.textContent=v;
 
@@ -234,29 +336,40 @@ select.appendChild(o);
 /* =========================
    CREAR AVISO
 ========================= */
+
 async function crearAviso(){
 
 if(!descripcion.value.trim()){
+
 alert("La descripción es obligatoria");
+
 return;
+
 }
 
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
+
 action:"crearAviso",
+
 usuario:USER.usuario,
+
 MAQUINA:maquina.value,
 TIPO_AVERIA:tipoAveria.value,
 PROYECTO:proyecto.value,
+
 descripcion:descripcion.value
+
 })
 });
 
-msgAviso.innerText="✔ Aviso creado";
+/* MENSAJE */
+
+msgAviso.innerHTML="✔ Aviso creado";
 
 setTimeout(()=>{
-msgAviso.innerText="";
+msgAviso.innerHTML="";
 },3000);
 
 descripcion.value="";
@@ -268,25 +381,34 @@ loadAvisos();
 /* =========================
    AVISOS
 ========================= */
+
 async function loadAvisos(){
 
 const r=await fetch(API+"?action=getAvisos");
+
 const d=await r.json();
 
 listaAvisos.innerHTML="";
 
-/* SOLO PENDIENTES + DESCENDENTE */
+/* SOLO PENDIENTES + DESC */
+
 const avisos=(d.avisos||[])
+
 .filter(a=>a.estado==="Pendiente")
-.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+
+.sort((a,b)=>
+new Date(b.fecha)-new Date(a.fecha)
+);
 
 avisos.forEach(a=>{
 
 let div=document.createElement("div");
+
 div.className="aviso";
 div.id=a.avisoID;
 
 div.innerHTML=`
+
 <b>Máquina:</b> ${a.maquina}<br>
 <b>Proyecto:</b> ${a.proyecto}<br>
 <b>Avería:</b> ${a.tipoAveria}<br>
@@ -294,21 +416,33 @@ div.innerHTML=`
 
 <b>Usuario:</b> ${a.usuario}<br>
 <b>Fecha:</b> ${new Date(a.fecha).toLocaleString()}<br>
+
 `;
 
 /* PRODUCCION NO VE OT */
+
 if(USER.rol!=="Produccion"){
 
 div.innerHTML+=`
+
 <div class="rowBtns">
-<button class="btn-orange" onclick="convertirOT('${a.avisoID}')">
+
+<button class="btn-orange"
+onclick="convertirOT('${a.avisoID}')">
+
 Convertir a OT
+
 </button>
 
-<button class="btn-red" onclick="rechazarAviso('${a.avisoID}')">
+<button class="btn-red"
+onclick="rechazarAviso('${a.avisoID}')">
+
 Eliminar aviso
+
 </button>
+
 </div>
+
 `;
 
 }
@@ -322,6 +456,7 @@ listaAvisos.appendChild(div);
 /* =========================
    RECHAZAR
 ========================= */
+
 async function rechazarAviso(id){
 
 await fetch(API,{
@@ -340,6 +475,7 @@ document.getElementById(id)?.remove();
 /* =========================
    OT
 ========================= */
+
 function crearOT(){
 location.href="ot.html";
 }
@@ -351,9 +487,13 @@ location.href="ot.html?aviso="+id;
 /* =========================
    LOGOUT
 ========================= */
+
 function logout(){
+
 localStorage.clear();
+
 location.reload();
+
 }
 
 </script>
