@@ -2,46 +2,62 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>OT</title>
 
 <style>
+*{box-sizing:border-box;}
+
 body{
 margin:0;
-font-family:Arial;
+font-family:Arial,sans-serif;
 background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,0.55);
+background:rgba(0,0,0,.55);
 min-height:100vh;
 padding:10px;
 }
 
 .card{
-background:rgba(0,0,0,0.8);
-padding:12px;
+background:rgba(0,0,0,.82);
+padding:14px;
 border-radius:12px;
 margin-bottom:12px;
-color:white;
+color:#fff;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
 }
 
 input,select,textarea,button{
 width:100%;
-padding:10px;
+max-width:100%;
+padding:12px;
 margin-top:6px;
 border:none;
 border-radius:8px;
-font-size:15px;
-box-sizing:border-box;
+font-size:16px;
 }
 
-textarea{min-height:80px;}
+textarea{
+min-height:90px;
+resize:vertical;
+}
+
+button{
+cursor:pointer;
+}
 
 .row{
 display:flex;
 gap:8px;
 flex-wrap:wrap;
+margin-top:10px;
 }
 
 .row > *{
@@ -49,7 +65,13 @@ flex:1;
 min-width:120px;
 }
 
-.btn-orange{background:#f57c00;color:black;}
+.btn-orange{
+background:#f57c00;
+}
+
+.hidden{
+display:none;
+}
 </style>
 </head>
 
@@ -59,7 +81,7 @@ min-width:120px;
 
 <div class="card">
 
-<h2>OT</h2>
+<h2>Orden de Trabajo</h2>
 
 <label>Emisor OT</label>
 <select id="emisorOT"></select>
@@ -82,51 +104,79 @@ min-width:120px;
 </div>
 
 <div class="card">
-<h3>Operarios (máx 6)</h3>
+
+<h3>Operarios</h3>
+
 <div id="ops"></div>
+
 <button onclick="addOp()">Añadir operario</button>
+
 </div>
 
 <div class="card">
-<h3>Materiales (máx 4)</h3>
+
+<h3>Materiales</h3>
+
 <div id="mats"></div>
+
 <button onclick="addMat()">Añadir material</button>
+
 </div>
 
 <div class="card">
 
-<label>Descripción crear</label>
+<label>Descripción crear *</label>
 <textarea id="descCrear"></textarea>
 
 <label>Descripción cerrar</label>
 <textarea id="descCerrar"></textarea>
 
-<label>Planificar</label>
-<select id="plan" onchange="togglePlan()">
-<option>NO</option>
-<option>SI</option>
+<label>Planificar acción</label>
+<select id="planificar" onchange="togglePlan()">
+<option value="NO">NO</option>
+<option value="SI">SI</option>
 </select>
 
 <div id="planBox" class="hidden">
-<label>Planificación acción</label>
+
+<label>Descripción planificación</label>
 <textarea id="planAccion"></textarea>
+
 </div>
 
 </div>
 
 <div class="card">
-<button class="btn-orange" onclick="guardar()">Guardar OT</button>
+<button class="btn-orange" onclick="guardarOT()">
+Guardar OT
+</button>
 </div>
 
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxG1OoS8qIRTbdDF4QXZdWEV6VxhpFSFW8UGCKX6PLup4Ddyb8Igdc9M4Rz8U5yRduP/exec";
+const API="https://script.google.com/macros/s/AKfycbxBBEkO8vTGZwTLiqza1edNp1V47noX7sA0as90LnczfwLQVl5EUa6yOpvg0_tUFIvO/exec";
 
 let LISTAS={};
 
+/* =========================
+   INIT
+========================= */
 async function init(){
+
+const u=JSON.parse(localStorage.getItem("u")||"{}");
+
+if(!u.usuario){
+location.href="index.html";
+return;
+}
+
+/* PRODUCCION BLOQUEADO */
+if(u.rol==="Produccion"){
+location.href="index.html";
+return;
+}
 
 const r=await fetch(API+"?action=getListas");
 const d=await r.json();
@@ -138,67 +188,145 @@ fill(maquina,"MAQUINA");
 fill(proyecto,"PROYECTO");
 fill(codigoAveria,"AVERIA");
 
+/* EMISOR DEFAULT */
+if(u.emisor){
+emisorOT.value=u.emisor;
+}
+
 addOp();
 addMat();
 
+/* CARGA DESDE AVISO */
+loadAviso();
+
 }
 
-/* LIMITES */
-function addOp(){
-if(ops.children.length>=6)return;
+/* =========================
+   FILL
+========================= */
+function fill(select,key){
 
-let d=document.createElement("div");
-d.className="row";
-
-d.innerHTML=`
-<select></select>
-<input type="number">
-`;
-
-fill(d.children[0],"EMISOR OT");
-
-ops.appendChild(d);
-}
-
-function addMat(){
-if(mats.children.length>=4)return;
-
-let d=document.createElement("div");
-d.className="row";
-
-d.innerHTML=`
-<input placeholder="Material">
-<input type="number">
-`;
-
-mats.appendChild(d);
-}
-
-/* FILL */
-function fill(sel,key){
-
-sel.innerHTML="";
+select.innerHTML="";
 
 (LISTAS[key]||[]).forEach(v=>{
+
 let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
-sel.appendChild(o);
+
+select.appendChild(o);
+
 });
 
 }
 
-/* PLANIFICACION */
-function togglePlan(){
-planBox.style.display=(plan.value==="SI")?"block":"none";
+/* =========================
+   CARGAR AVISO
+========================= */
+async function loadAviso(){
+
+const params=new URLSearchParams(location.search);
+const avisoID=params.get("aviso");
+
+if(!avisoID) return;
+
+const r=await fetch(API+"?action=getAvisos");
+const d=await r.json();
+
+const aviso=(d.avisos||[]).find(a=>a.avisoID===avisoID);
+
+if(!aviso) return;
+
+maquina.value=aviso.maquina;
+proyecto.value=aviso.proyecto;
+codigoAveria.value=aviso.tipoAveria;
+descCrear.value=aviso.descripcion;
+
 }
 
-/* GUARDAR OT */
-async function guardar(){
+/* =========================
+   OPERARIOS
+========================= */
+function addOp(){
+
+if(ops.children.length>=6){
+alert("Máximo 6 operarios");
+return;
+}
+
+let div=document.createElement("div");
+div.className="row";
+
+div.innerHTML=`
+<select class="opSel"></select>
+<input type="number" class="opTime" placeholder="Tiempo">
+`;
+
+ops.appendChild(div);
+
+fill(div.querySelector(".opSel"),"EMISOR OT");
+
+}
+
+/* =========================
+   MATERIALES
+========================= */
+function addMat(){
+
+if(mats.children.length>=4){
+alert("Máximo 4 materiales");
+return;
+}
+
+let div=document.createElement("div");
+div.className="row";
+
+div.innerHTML=`
+<input class="matName" placeholder="Material">
+<input class="matQty" type="number" placeholder="Cantidad">
+`;
+
+mats.appendChild(div);
+
+}
+
+/* =========================
+   PLANIFICACION
+========================= */
+function togglePlan(){
+
+if(planificar.value==="SI"){
+planBox.classList.remove("hidden");
+}else{
+planBox.classList.add("hidden");
+}
+
+}
+
+/* =========================
+   GUARDAR OT
+========================= */
+async function guardarOT(){
+
+if(!descCrear.value.trim()){
+alert("Descripción obligatoria");
+return;
+}
+
+const OPERARIOS=[...document.querySelectorAll("#ops .row")].map(r=>({
+NOMBRE:r.querySelector(".opSel").value,
+TIEMPO:r.querySelector(".opTime").value
+}));
+
+const MATERIALES=[...document.querySelectorAll("#mats .row")].map(r=>({
+MATERIAL:r.querySelector(".matName").value,
+CANTIDAD:r.querySelector(".matQty").value
+}));
 
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
+
 action:"crearOT",
 
 EMISOR_OT:emisorOT.value,
@@ -212,22 +340,17 @@ TIEMPO_INTERVENCION:tiempoInt.value,
 DESCRIPCION_CREACION:descCrear.value,
 DESCRIPCION_CIERRE:descCerrar.value,
 
-PLANIFICAR:plan.value,
-PLANIFICAR_ACCION:planAccion.value,
+PLANIFICAR_ACCION:planificar.value,
+DESCRIPCION_PLANIFICACION:planAccion.value,
 
-OPERARIOS:[...ops.querySelectorAll(".row")].map(r=>({
-NOMBRE:r.children[0].value,
-TIEMPO:r.children[1].value
-})),
+OPERARIOS,
+MATERIALES
 
-MATERIALES:[...mats.querySelectorAll(".row")].map(r=>({
-MATERIAL:r.children[0].value,
-CANTIDAD:r.children[1].value
-}))
 })
 });
 
 alert("OT guardada");
+
 location.href="index.html";
 
 }

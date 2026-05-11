@@ -2,56 +2,91 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Avisos</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestión Avisos</title>
 
 <style>
+*{box-sizing:border-box;}
+
 body{
 margin:0;
-font-family:Arial;
+font-family:Arial,sans-serif;
 background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,0.55);
+background:rgba(0,0,0,.55);
 min-height:100vh;
 padding:10px;
 }
 
 .card{
-background:rgba(0,0,0,0.8);
-padding:12px;
+background:rgba(0,0,0,.82);
+padding:14px;
 border-radius:12px;
 margin-bottom:12px;
-color:white;
+color:#fff;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
 }
 
 input,select,textarea,button{
 width:100%;
-padding:10px;
+max-width:100%;
+padding:12px;
 margin-top:6px;
 border:none;
 border-radius:8px;
-font-size:15px;
-box-sizing:border-box;
+font-size:16px;
 }
 
-textarea{min-height:80px;}
+textarea{
+min-height:90px;
+resize:vertical;
+}
+
+button{
+cursor:pointer;
+}
 
 .btn-yellow{background:#fbc02d;}
-.btn-red{background:#d32f2f;color:white;}
-.btn-blue{background:#1976d2;color:white;}
-.btn-orange{background:#f57c00;color:black;}
+.btn-red{background:#d32f2f;color:#fff;}
+.btn-blue{background:#1976d2;color:#fff;}
+.btn-orange{background:#f57c00;color:#000;}
 
 .aviso{
 background:#222;
-padding:10px;
+padding:12px;
 margin-top:10px;
-border-radius:8px;
-word-break:break-word;
+border-radius:10px;
+overflow-wrap:break-word;
 }
 
-.hidden{display:none;}
+.rowBtns{
+display:flex;
+gap:8px;
+margin-top:10px;
+flex-wrap:wrap;
+}
+
+.rowBtns button{
+flex:1;
+min-width:120px;
+}
+
+.hidden{
+display:none;
+}
+
+#msgAviso{
+margin-top:10px;
+color:#00ff90;
+font-weight:bold;
+}
 </style>
 </head>
 
@@ -59,19 +94,29 @@ word-break:break-word;
 
 <div class="overlay">
 
+<!-- LOGIN -->
 <div id="loginBox" class="card">
+
 <h2>Login</h2>
+
+<label>Usuario</label>
 <input id="usuario">
+
+<label>Contraseña</label>
 <input id="password" type="password">
+
 <button onclick="login()">Entrar</button>
+
 </div>
 
+<!-- MAIN -->
 <div id="mainBox" class="hidden">
 
 <div class="card">
 <button class="btn-red" onclick="logout()">Cerrar sesión</button>
 </div>
 
+<!-- NUEVO AVISO -->
 <div class="card">
 
 <h3>Nuevo Aviso</h3>
@@ -90,11 +135,22 @@ word-break:break-word;
 
 <button class="btn-yellow" onclick="crearAviso()">Crear Aviso</button>
 
+<p id="msgAviso"></p>
+
 </div>
 
+<!-- GENERAR OT -->
+<div id="otBox" class="card hidden">
+<button class="btn-blue" onclick="crearOT()">Generar OT</button>
+</div>
+
+<!-- AVISOS -->
 <div class="card">
+
 <h3>Avisos pendientes</h3>
-<div id="lista"></div>
+
+<div id="listaAvisos"></div>
+
 </div>
 
 </div>
@@ -103,20 +159,30 @@ word-break:break-word;
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxG1OoS8qIRTbdDF4QXZdWEV6VxhpFSFW8UGCKX6PLup4Ddyb8Igdc9M4Rz8U5yRduP/exec";
+const API="https://script.google.com/macros/s/AKfycbxBBEkO8vTGZwTLiqza1edNp1V47noX7sA0as90LnczfwLQVl5EUa6yOpvg0_tUFIvO/exec";
 
 let USER=null;
 let LISTAS={};
 
+/* =========================
+   LOGIN
+========================= */
 async function login(){
 
-const r=await fetch(API+"?action=login&usuario="+usuario.value+"&password="+password.value);
+const r=await fetch(
+API+"?action=login&usuario="+encodeURIComponent(usuario.value)+"&password="+encodeURIComponent(password.value)
+);
+
 const d=await r.json();
 
-if(!d.ok)return alert(d.error);
+if(!d.ok){
+alert(d.error);
+return;
+}
 
 USER=d;
-localStorage.setItem("u",JSON.stringify(d));
+
+localStorage.setItem("u",JSON.stringify(USER));
 
 loginBox.classList.add("hidden");
 mainBox.classList.remove("hidden");
@@ -124,8 +190,18 @@ mainBox.classList.remove("hidden");
 await loadListas();
 loadAvisos();
 
+/* PRODUCCION NO VE OT */
+if(USER.rol==="Produccion"){
+otBox.classList.add("hidden");
+}else{
+otBox.classList.remove("hidden");
 }
 
+}
+
+/* =========================
+   LISTAS
+========================= */
 async function loadListas(){
 
 const r=await fetch(API+"?action=getListas");
@@ -133,64 +209,36 @@ const d=await r.json();
 
 LISTAS=d.listas||{};
 
-fill("maquina","MAQUINA");
-fill("tipoAveria","AVERIA");
-fill("proyecto","PROYECTO");
+fill(maquina,"MAQUINA");
+fill(tipoAveria,"AVERIA");
+fill(proyecto,"PROYECTO");
 
 }
 
-function fill(id,key){
+function fill(select,key){
 
-const s=document.getElementById(id);
-s.innerHTML="";
+select.innerHTML="";
 
 (LISTAS[key]||[]).forEach(v=>{
+
 let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
-s.appendChild(o);
-});
 
-}
-
-/* SOLO PENDIENTES + INFO COMPLETA */
-async function loadAvisos(){
-
-const r=await fetch(API+"?action=getAvisos");
-const d=await r.json();
-
-lista.innerHTML="";
-
-(d.avisos||[])
-.filter(a=>a.estado==="Pendiente")
-.forEach(a=>{
-
-let div=document.createElement("div");
-div.className="aviso";
-
-div.innerHTML=`
-<b>${a.maquina}</b> - ${a.proyecto}<br>
-${a.tipoAveria}<br>
-${a.descripcion}<br><br>
-
-Usuario: ${a.usuario}<br>
-Fecha: ${a.fecha}<br><br>
-
-<button class="btn-orange" onclick="convertir('${a.avisoID}')">OT</button>
-<button class="btn-red" onclick="rechazar('${a.avisoID}')">Eliminar</button>
-`;
-
-lista.appendChild(div);
+select.appendChild(o);
 
 });
 
 }
 
-/* VALIDACIÓN */
+/* =========================
+   CREAR AVISO
+========================= */
 async function crearAviso(){
 
 if(!descripcion.value.trim()){
-return alert("Descripción obligatoria");
+alert("La descripción es obligatoria");
+return;
 }
 
 await fetch(API,{
@@ -205,14 +253,78 @@ descripcion:descripcion.value
 })
 });
 
+msgAviso.innerText="✔ Aviso creado";
+
+setTimeout(()=>{
+msgAviso.innerText="";
+},3000);
+
 descripcion.value="";
+
 loadAvisos();
 
 }
 
-function rechazar(id){
+/* =========================
+   AVISOS
+========================= */
+async function loadAvisos(){
 
-fetch(API,{
+const r=await fetch(API+"?action=getAvisos");
+const d=await r.json();
+
+listaAvisos.innerHTML="";
+
+/* SOLO PENDIENTES + DESCENDENTE */
+const avisos=(d.avisos||[])
+.filter(a=>a.estado==="Pendiente")
+.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+
+avisos.forEach(a=>{
+
+let div=document.createElement("div");
+div.className="aviso";
+div.id=a.avisoID;
+
+div.innerHTML=`
+<b>Máquina:</b> ${a.maquina}<br>
+<b>Proyecto:</b> ${a.proyecto}<br>
+<b>Avería:</b> ${a.tipoAveria}<br>
+<b>Descripción:</b> ${a.descripcion}<br><br>
+
+<b>Usuario:</b> ${a.usuario}<br>
+<b>Fecha:</b> ${new Date(a.fecha).toLocaleString()}<br>
+`;
+
+/* PRODUCCION NO VE OT */
+if(USER.rol!=="Produccion"){
+
+div.innerHTML+=`
+<div class="rowBtns">
+<button class="btn-orange" onclick="convertirOT('${a.avisoID}')">
+Convertir a OT
+</button>
+
+<button class="btn-red" onclick="rechazarAviso('${a.avisoID}')">
+Eliminar aviso
+</button>
+</div>
+`;
+
+}
+
+listaAvisos.appendChild(div);
+
+});
+
+}
+
+/* =========================
+   RECHAZAR
+========================= */
+async function rechazarAviso(id){
+
+await fetch(API,{
 method:"POST",
 body:JSON.stringify({
 action:"rechazarAviso",
@@ -225,10 +337,20 @@ document.getElementById(id)?.remove();
 
 }
 
-function convertir(id){
+/* =========================
+   OT
+========================= */
+function crearOT(){
+location.href="ot.html";
+}
+
+function convertirOT(id){
 location.href="ot.html?aviso="+id;
 }
 
+/* =========================
+   LOGOUT
+========================= */
 function logout(){
 localStorage.clear();
 location.reload();
