@@ -6,6 +6,7 @@
 <title>OT</title>
 
 <style>
+
 *{box-sizing:border-box;}
 
 body{
@@ -48,10 +49,11 @@ border-radius:8px;
 font-size:16px;
 }
 
-.btn-orange{background:#f57c00;color:black;}
 .btn-red{background:#d32f2f;color:white;}
+.btn-orange{background:#f57c00;color:black;}
 
 .hidden{display:none;}
+
 </style>
 </head>
 
@@ -96,7 +98,6 @@ font-size:16px;
 <input id="t1" type="number" placeholder="Tiempo">
 
 <button onclick="addOperario()">Añadir operario</button>
-
 <div id="opsExtra"></div>
 
 </div>
@@ -104,8 +105,8 @@ font-size:16px;
 <div class="card">
 
 <h3>Material 1</h3>
-<input id="m1">
-<input id="q1" type="number">
+<input id="m1" placeholder="Material 1">
+<input id="q1" type="number" placeholder="Cantidad 1">
 
 <button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">
 Escanear material
@@ -137,63 +138,96 @@ let USERS=[];
 
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u")||"{}");
+const user=JSON.parse(localStorage.getItem("u")||"{}");
 
-if(u.rol==="Produccion"){
+if(!user.usuario){
 location.href="index.html";
 return;
 }
 
-const r=await fetch(`${API}?action=getUsuarios`);
-const d=await r.json();
-USERS=d.usuarios;
+if(user.rol==="Produccion"){
+location.href="index.html";
+return;
+}
 
-fillEmisor(u.emisor);
-fillOps();
+/* 🔥 CARGA USUARIOS REAL */
+const r=await fetch(`${API}?action=getUsuarios`);
+const data=await r.json();
+
+/* FILTRO REAL: elimina filas vacías */
+USERS=(data.usuarios||[])
+.filter(u=>u.emisor && u.emisor.trim()!=="");
+
+/* DEBUG opcional
+console.log("USUARIOS CARGADOS:", USERS);
+*/
+
+loadEmisores(user.emisor);
+loadOperario1(user.emisor);
 
 addOperario();
 addMaterial();
 
 }
 
-function fillEmisor(val){
+/* 🔥 EMISOR OT (dropdown + autoselect) */
+function loadEmisores(defaultVal){
 
 emisorOT.innerHTML="";
 
 USERS.forEach(u=>{
-let o=document.createElement("option");
-o.value=u.emisor;
-o.textContent=u.emisor;
-if(u.emisor===val)o.selected=true;
-emisorOT.appendChild(o);
+let opt=document.createElement("option");
+opt.value=u.emisor;
+opt.textContent=u.emisor;
+
+if(u.emisor===defaultVal){
+opt.selected=true;
+}
+
+emisorOT.appendChild(opt);
 });
 
 }
 
-function fillOps(){
+/* 🔥 OPERARIO 1 SIEMPRE FUNCIONAL */
+function loadOperario1(defaultVal){
 
 op1.innerHTML="";
 
 USERS.forEach(u=>{
-let o=document.createElement("option");
-o.value=u.emisor;
-o.textContent=u.emisor;
-op1.appendChild(o);
+let opt=document.createElement("option");
+opt.value=u.emisor;
+opt.textContent=u.emisor;
+
+if(u.emisor===defaultVal){
+opt.selected=true;
+}
+
+op1.appendChild(opt);
 });
 
 }
 
-/* OPERARIOS */
+/* OPERARIOS EXTRA */
 function addOperario(){
 
 let div=document.createElement("div");
 
-div.innerHTML=`
-<select>
-${USERS.map(u=>`<option>${u.emisor}</option>`).join("")}
-</select>
-<input type="number" placeholder="Tiempo">
-`;
+let sel=document.createElement("select");
+
+USERS.forEach(u=>{
+let opt=document.createElement("option");
+opt.value=u.emisor;
+opt.textContent=u.emisor;
+sel.appendChild(opt);
+});
+
+let t=document.createElement("input");
+t.type="number";
+t.placeholder="Tiempo";
+
+div.appendChild(sel);
+div.appendChild(t);
 
 opsExtra.appendChild(div);
 
@@ -214,16 +248,15 @@ matExtra.appendChild(div);
 
 }
 
-/* GUARDAR REAL EN SHEETS */
+/* GUARDADO OT (estructura estable para Apps Script) */
 async function guardarOT(){
 
 if(!desc.value.trim()){
-return alert("Descripción obligatoria");
+alert("Descripción obligatoria");
+return;
 }
 
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
+const payload={
 action:"crearOT",
 emisorOT:emisorOT.value,
 hora:hora.value,
@@ -231,15 +264,19 @@ maquina:maquina.value,
 tipoAveria:tipoAveria.value,
 proyecto:proyecto.value,
 estado:estado.value,
-op1:op1.value,
-t1:t1.value,
-m1:m1.value,
-q1:q1.value,
+operario1:op1.value,
+tiempo1:t1.value,
+material1:m1.value,
+cantidad1:q1.value,
 descripcion:desc.value
-})
+};
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify(payload)
 });
 
-alert("OT guardada");
+alert("OT guardada correctamente");
 
 location.href="index.html";
 
