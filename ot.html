@@ -26,12 +26,6 @@ margin-bottom:12px;
 color:white;
 }
 
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
-}
-
 input,select,textarea,button{
 width:100%;
 padding:10px;
@@ -39,13 +33,10 @@ margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:15px;
-max-width:100%;
+box-sizing:border-box;
 }
 
 textarea{min-height:80px;}
-
-.btn-orange{background:#f57c00;color:black;}
-.btn-red{background:#d32f2f;color:white;}
 
 .row{
 display:flex;
@@ -57,6 +48,8 @@ flex-wrap:wrap;
 flex:1;
 min-width:120px;
 }
+
+.btn-orange{background:#f57c00;color:black;}
 </style>
 </head>
 
@@ -66,13 +59,10 @@ min-width:120px;
 
 <div class="card">
 
-<h2>Orden de Trabajo</h2>
+<h2>OT</h2>
 
 <label>Emisor OT</label>
 <select id="emisorOT"></select>
-
-<label>Hora</label>
-<input id="hora" type="time">
 
 <label>Máquina</label>
 <select id="maquina"></select>
@@ -80,28 +70,25 @@ min-width:120px;
 <label>Proyecto</label>
 <select id="proyecto"></select>
 
-<label>Estado</label>
-<select id="estado">
-<option>ABIERTA</option>
-<option>CERRADA</option>
-</select>
-
 <label>Código avería</label>
-<input id="codigoAveria">
+<select id="codigoAveria"></select>
+
+<label>Hora</label>
+<input id="hora" type="time">
 
 <label>Tiempo intervención</label>
-<input id="tiempoIntervencion" type="number">
+<input id="tiempoInt" type="number">
 
 </div>
 
 <div class="card">
-<h3>Operarios</h3>
+<h3>Operarios (máx 6)</h3>
 <div id="ops"></div>
 <button onclick="addOp()">Añadir operario</button>
 </div>
 
 <div class="card">
-<h3>Materiales</h3>
+<h3>Materiales (máx 4)</h3>
 <div id="mats"></div>
 <button onclick="addMat()">Añadir material</button>
 </div>
@@ -115,13 +102,13 @@ min-width:120px;
 <textarea id="descCerrar"></textarea>
 
 <label>Planificar</label>
-<select id="plan">
+<select id="plan" onchange="togglePlan()">
 <option>NO</option>
 <option>SI</option>
 </select>
 
 <div id="planBox" class="hidden">
-<label>Planificar acción</label>
+<label>Planificación acción</label>
 <textarea id="planAccion"></textarea>
 </div>
 
@@ -149,12 +136,45 @@ LISTAS=d.listas||{};
 fill(emisorOT,"EMISOR OT");
 fill(maquina,"MAQUINA");
 fill(proyecto,"PROYECTO");
+fill(codigoAveria,"AVERIA");
 
 addOp();
 addMat();
 
 }
 
+/* LIMITES */
+function addOp(){
+if(ops.children.length>=6)return;
+
+let d=document.createElement("div");
+d.className="row";
+
+d.innerHTML=`
+<select></select>
+<input type="number">
+`;
+
+fill(d.children[0],"EMISOR OT");
+
+ops.appendChild(d);
+}
+
+function addMat(){
+if(mats.children.length>=4)return;
+
+let d=document.createElement("div");
+d.className="row";
+
+d.innerHTML=`
+<input placeholder="Material">
+<input type="number">
+`;
+
+mats.appendChild(d);
+}
+
+/* FILL */
 function fill(sel,key){
 
 sel.innerHTML="";
@@ -168,38 +188,9 @@ sel.appendChild(o);
 
 }
 
-/* OPERARIOS */
-function addOp(){
-
-let d=document.createElement("div");
-d.className="row";
-
-let s=document.createElement("select");
-fill(s,"EMISOR OT");
-
-let t=document.createElement("input");
-t.type="number";
-
-d.appendChild(s);
-d.appendChild(t);
-
-ops.appendChild(d);
-
-}
-
-/* MATERIALES */
-function addMat(){
-
-let d=document.createElement("div");
-d.className="row";
-
-d.innerHTML=`
-<input placeholder="Material">
-<input type="number" placeholder="Cantidad">
-`;
-
-mats.appendChild(d);
-
+/* PLANIFICACION */
+function togglePlan(){
+planBox.style.display=(plan.value==="SI")?"block":"none";
 }
 
 /* GUARDAR OT */
@@ -211,13 +202,12 @@ body:JSON.stringify({
 action:"crearOT",
 
 EMISOR_OT:emisorOT.value,
-HORA:hora.value,
 MAQUINA:maquina.value,
 PROYECTO:proyecto.value,
-ESTADO_OT:estado.value,
-
 CODIGO_AVERIA:codigoAveria.value,
-TIEMPO_INTERVENCION:tiempoIntervencion.value,
+
+HORA:hora.value,
+TIEMPO_INTERVENCION:tiempoInt.value,
 
 DESCRIPCION_CREACION:descCrear.value,
 DESCRIPCION_CIERRE:descCerrar.value,
@@ -225,14 +215,14 @@ DESCRIPCION_CIERRE:descCerrar.value,
 PLANIFICAR:plan.value,
 PLANIFICAR_ACCION:planAccion.value,
 
-OPERARIOS:[...ops.querySelectorAll("div")].map(d=>({
-NOMBRE:d.children[0].value,
-TIEMPO:d.children[1].value
+OPERARIOS:[...ops.querySelectorAll(".row")].map(r=>({
+NOMBRE:r.children[0].value,
+TIEMPO:r.children[1].value
 })),
 
-MATERIALES:[...mats.querySelectorAll("div")].map(d=>({
-MATERIAL:d.children[0].value,
-CANTIDAD:d.children[1].value
+MATERIALES:[...mats.querySelectorAll(".row")].map(r=>({
+MATERIAL:r.children[0].value,
+CANTIDAD:r.children[1].value
 }))
 })
 });
