@@ -1,29 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>OT</title>
 
 <style>
 
 body{
-font-family:Arial;
 margin:0;
-padding:0;
-background:url('op.png');
-background-size:cover;
-background-position:center;
-color:white;
+font-family:Arial;
+background:url('op.png') center/cover fixed;
+}
+
+.overlay{
+background:rgba(0,0,0,0.5);
+min-height:100vh;
+padding:15px;
 }
 
 .container{
-background:rgba(0,0,0,0.8);
-margin:10px;
-padding:20px;
+max-width:900px;
+margin:auto;
+color:white;
+}
+
+.card{
+background:rgba(0,0,0,0.75);
+padding:15px;
 border-radius:10px;
+margin-bottom:15px;
 }
 
 input,select,textarea,button{
@@ -31,39 +37,38 @@ width:100%;
 padding:12px;
 margin-top:10px;
 border:none;
-border-radius:6px;
+border-radius:8px;
 font-size:16px;
-box-sizing:border-box;
 }
 
-button{
-background:#1976d2;
-color:white;
-font-weight:bold;
-}
+.btn-red{background:red;color:white;}
+.btn-orange{background:orange;color:black;}
+.btn-yellow{background:gold;color:black;}
 
-.hidden{
-display:none;
-}
+.hidden{display:none;}
 
 </style>
-
 </head>
+
 <body>
+
+<div class="overlay">
 
 <div class="container">
 
-<button onclick="logout()">Cerrar sesión</button>
+<div class="card">
 
-<h2>Orden de Trabajo</h2>
+<button class="btn-red" onclick="logout()">Cerrar sesión</button>
+
+<h2>OT</h2>
 
 <input id="hora" type="time">
 
 <select id="maquina"></select>
-
 <select id="tipoAveria"></select>
 
-<input id="proyecto">
+<!-- 🔥 PROYECTO DESPLEGABLE -->
+<select id="proyecto"></select>
 
 <select id="estado">
 <option>ABIERTA</option>
@@ -72,26 +77,44 @@ display:none;
 
 <input id="emisor" readonly>
 
+</div>
+
+<div class="card">
+
+<h3>Operarios</h3>
+
 <div id="operarios"></div>
 
 <button onclick="addOperario()">Añadir operario</button>
+
+</div>
+
+<div class="card">
+
+<h3>Materiales</h3>
 
 <div id="materiales"></div>
 
 <button onclick="addMaterial()">Añadir material</button>
 
-<textarea id="descripcionCrear" placeholder="Descripción crear"></textarea>
+</div>
 
-<textarea id="descripcionCerrar" placeholder="Descripción cerrar"></textarea>
+<div class="card">
 
-<select id="planificar" onchange="togglePlanificar()">
-<option value="NO">NO</option>
-<option value="SI">SI</option>
+<textarea id="descripcionCerrar" placeholder="Descripción cierre"></textarea>
+
+<select id="planificar">
+<option>NO</option>
+<option>SI</option>
 </select>
 
-<input id="planificarAccion" class="hidden" placeholder="Planificar acción">
+<input id="planAccion" placeholder="Planificación" class="hidden">
 
-<button onclick="guardarOT()">Guardar OT</button>
+<button class="btn-orange" onclick="guardar()">Guardar OT</button>
+
+</div>
+
+</div>
 
 </div>
 
@@ -99,202 +122,125 @@ display:none;
 
 const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
-let USER=JSON.parse(localStorage.getItem("user"));
-
 let LISTAS={};
+let usuarios=[];
 
-let operarios=1;
-let materiales=1;
-
-function logout(){
-
-localStorage.clear();
-location.href="index.html";
-
-}
+let op=0;
+let mat=0;
 
 async function init(){
 
-document.getElementById("emisor").value=USER.emisor;
-
 const r=await fetch(`${API}?action=getListas`);
-
 const d=await r.json();
 
 LISTAS=d.listas;
 
-cargarSelect("maquina","MAQUINA");
-cargarSelect("tipoAveria","AVERIA");
-cargarSelect("proyecto","PROYECTO");
+fill("maquina","MAQUINA");
+fill("tipoAveria","AVERIA");
+fill("proyecto","PROYECTO"); // 🔥
 
-addOperario();
-addMaterial();
+const u=await fetch(`${API}?action=getUsuarios`);
+const ud=await u.json();
 
-const params=new URLSearchParams(location.search);
+usuarios=ud.usuarios;
 
-const ot=params.get("ot");
+emisor.value=JSON.parse(localStorage.getItem("u")).emisor;
 
-if(ot){
+const aviso=new URLSearchParams(location.search).get("aviso");
 
-const rr=await fetch(`${API}?action=getOT&ot=${ot}`);
+if(aviso){
 
-const dd=await rr.json();
-
-if(dd.ok){
-
-const row=dd.data;
-
-maquina.value=row[11];
-proyecto.value=row[12];
-tipoAveria.value=row[19];
-descripcionCrear.value=row[26];
-
-}
-
-}
-
-}
-
-function cargarSelect(id,tipo){
-
-const s=document.getElementById(id);
-
-s.innerHTML="";
-
-LISTAS[tipo].forEach(v=>{
-
-const o=document.createElement("option");
-
-o.value=v;
-o.textContent=v;
-
-s.appendChild(o);
-
-});
-
-}
-
-function addOperario(){
-
-if(operarios>6)return;
-
-const div=document.createElement("div");
-
-div.innerHTML=`
-
-<input id="operario${operarios}" placeholder="Operario ${operarios}">
-<input id="tiempo${operarios}" type="number" placeholder="Tiempo ${operarios}">
-
-`;
-
-document.getElementById("operarios").appendChild(div);
-
-operarios++;
-
-}
-
-function addMaterial(){
-
-if(materiales>4)return;
-
-const div=document.createElement("div");
-
-div.innerHTML=`
-
-<input id="material${materiales}" placeholder="Material ${materiales}">
-<input id="qtt${materiales}" type="number" placeholder="Cantidad ${materiales}">
-
-<button onclick="abrirRecambios(${materiales})">Escanear material</button>
-
-`;
-
-document.getElementById("materiales").appendChild(div);
-
-materiales++;
-
-}
-
-function abrirRecambios(n){
-
-window.open("https://TUWEBRECAMBIOS.com");
-
-window.materialActual=n;
-
-}
-
-window.addEventListener("message",(e)=>{
-
-const data=e.data;
-
-document.getElementById(`material${window.materialActual}`).value=data.material;
-
-document.getElementById(`qtt${window.materialActual}`).value=data.cantidad;
-
-});
-
-function togglePlanificar(){
-
-if(planificar.value=="SI"){
-
-planificarAccion.classList.remove("hidden");
-
-}else{
-
-planificarAccion.classList.add("hidden");
-
-}
-
-}
-
-async function guardarOT(){
-
-const body={
-
-action:"crearOT",
-
-hora:hora.value,
-maquina:maquina.value,
-tipoAveria:tipoAveria.value,
-proyecto:proyecto.value,
-estado:estado.value,
-emisor:emisor.value,
-
-descripcionCrear:descripcionCrear.value,
-descripcionCerrar:descripcionCerrar.value,
-
-planificarAccion:planificarAccion.value
-
-};
-
-for(let i=1;i<=6;i++){
-
-body[`operario${i}`]=document.getElementById(`operario${i}`)?.value || "";
-body[`tiempo${i}`]=document.getElementById(`tiempo${i}`)?.value || "";
-
-}
-
-for(let i=1;i<=4;i++){
-
-body[`material${i}`]=document.getElementById(`material${i}`)?.value || "";
-body[`qtt${i}`]=document.getElementById(`qtt${i}`)?.value || "";
-
-}
-
-const r=await fetch(API,{
-method:"POST",
-body:JSON.stringify(body)
-});
-
+const r=await fetch(`${API}?action=getAvisos`);
 const d=await r.json();
 
-if(d.ok){
+let a=d.avisos.find(x=>x.avisoID==aviso);
 
-alert("OT guardada");
-
-location.href="index.html";
+if(a){
+maquina.value=a.maquina;
+tipoAveria.value=a.tipoAveria;
+proyecto.value=a.proyecto;
+}
 
 }
 
+addOperario(); // 🔥 VACÍO POR DEFECTO
+addMaterial();
+
+}
+
+function fill(id,key){
+
+const s=document.getElementById(id);
+s.innerHTML="";
+
+(LISTAS[key]||[]).forEach(v=>{
+let o=document.createElement("option");
+o.value=v;
+o.textContent=v;
+s.appendChild(o);
+});
+
+}
+
+/* 🔥 OPERARIOS DESPLEGABLES VACÍOS */
+function addOperario(){
+
+if(op>=6)return;
+
+op++;
+
+let div=document.createElement("div");
+
+let select=document.createElement("select");
+select.innerHTML=`<option value=""></option>`; // 🔥 VACÍO POR DEFECTO
+
+usuarios.forEach(u=>{
+let o=document.createElement("option");
+o.value=u.emisor;
+o.textContent=u.emisor;
+select.appendChild(o);
+});
+
+div.appendChild(select);
+
+let t=document.createElement("input");
+t.placeholder="Tiempo";
+t.type="number";
+
+div.appendChild(t);
+
+operarios.appendChild(div);
+
+}
+
+/* 🔥 MATERIAL */
+function addMaterial(){
+
+if(mat>=4)return;
+
+mat++;
+
+let div=document.createElement("div");
+
+div.innerHTML=`
+<input placeholder="Material ${mat}">
+<input type="number" placeholder="Cantidad ${mat}">
+<button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">Escanear material</button>
+`;
+
+materiales.appendChild(div);
+
+}
+
+function guardar(){
+
+alert("OT guardada (conectarlo a Apps Script aquí)");
+
+}
+
+function logout(){
+localStorage.clear();
+location.href="index.html";
 }
 
 init();
