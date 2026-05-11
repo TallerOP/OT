@@ -6,9 +6,6 @@
 <title>OT</title>
 
 <style>
-
-*{box-sizing:border-box;}
-
 body{
 margin:0;
 font-family:Arial;
@@ -21,23 +18,12 @@ min-height:100vh;
 padding:15px;
 }
 
-.container{
-max-width:1000px;
-margin:auto;
-color:white;
-}
-
 .card{
-background:rgba(0,0,0,0.80);
+background:rgba(0,0,0,0.8);
 padding:15px;
 border-radius:12px;
 margin-bottom:15px;
-}
-
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
+color:white;
 }
 
 input,select,textarea,button{
@@ -53,7 +39,6 @@ textarea{min-height:90px;}
 
 .btn-red{background:#d32f2f;color:white;}
 .btn-orange{background:#f57c00;color:black;}
-.btn-blue{background:#1976d2;color:white;}
 
 </style>
 </head>
@@ -61,11 +46,8 @@ textarea{min-height:90px;}
 <body>
 
 <div class="overlay">
-<div class="container">
 
 <div class="card">
-
-<button class="btn-red" onclick="logout()">Cerrar sesión</button>
 
 <h2>Orden de Trabajo</h2>
 
@@ -90,156 +72,128 @@ textarea{min-height:90px;}
 </div>
 
 <div class="card">
-
 <h3>Operarios</h3>
-
-<div id="operarios"></div>
-
-<button onclick="addOperario()">Añadir operario</button>
-
+<div id="ops"></div>
+<button onclick="addOp()">Añadir operario</button>
 </div>
 
 <div class="card">
-
 <h3>Materiales</h3>
-
-<div id="materiales"></div>
-
-<button onclick="addMaterial()">Añadir material</button>
-
+<div id="mats"></div>
+<button onclick="addMat()">Añadir material</button>
 </div>
 
 <div class="card">
-
-<label>Descripción cierre *</label>
-<textarea id="descripcion"></textarea>
-
+<label>Descripción</label>
+<textarea id="desc"></textarea>
 </div>
 
 <div class="card">
-
-<button class="btn-orange" onclick="guardarOT()">Guardar OT</button>
-
+<button class="btn-orange" onclick="guardar()">Guardar OT</button>
 </div>
 
-</div>
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
+const API="https://script.google.com/macros/s/AKfycbxBBEkO8vTGZwTLiqza1edNp1V47noX7sA0as90LnczfwLQVl5EUa6yOpvg0_tUFIvO/exec";
 
 let LISTAS={};
 
 async function init(){
 
-const user=JSON.parse(localStorage.getItem("u")||"{}");
+const u=JSON.parse(localStorage.getItem("u")||"{}");
+if(!u.usuario) location.href="index.html";
 
-if(!user.usuario){
-location.href="index.html";
-return;
-}
-
-const r=await fetch(`${API}?action=getListas`);
+const r=await fetch(API+"?action=getListas");
 const d=await r.json();
-
 LISTAS=d.listas||{};
 
-/* FIX robusto */
-const get=(tipo)=>
-(LISTAS[tipo]||[])
-.filter(v=>v && v.trim()!=="")
+fill(emisorOT,"EMISOR OT");
+fill(maquina,"MAQUINA");
+fill(proyecto,"PROYECTO");
 
-/* 🔥 EMISOR OT (LISTAS) */
-fillSelect(emisorOT,get("EMISOR OT"));
-
-/* 🔥 MAQUINA */
-fillSelect(maquina,get("MAQUINA"));
-
-/* 🔥 PROYECTO */
-fillSelect(proyecto,get("PROYECTO"));
-
-/* OPERARIOS INICIALES */
-addOperario();
-addOperario();
+addOp();
+addMat();
 
 }
 
-function fillSelect(select,arr){
+function fill(sel,key){
 
-select.innerHTML="";
+sel.innerHTML="";
 
-arr.forEach(v=>{
+(LISTAS[key]||[]).forEach(v=>{
 let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
-select.appendChild(o);
+sel.appendChild(o);
 });
 
 }
 
-/* OPERARIOS (EMISOR OT SOURCE) */
-function addOperario(){
+/* OPERARIOS */
+function addOp(){
 
-const div=document.createElement("div");
+let d=document.createElement("div");
 
-const sel=document.createElement("select");
+let s=document.createElement("select");
+fill(s,"EMISOR OT");
 
-fillSelect(sel,(LISTAS["EMISOR OT"]||[]));
-
-const t=document.createElement("input");
+let t=document.createElement("input");
 t.type="number";
-t.placeholder="Tiempo";
 
-div.appendChild(sel);
-div.appendChild(t);
+d.appendChild(s);
+d.appendChild(t);
 
-operarios.appendChild(div);
+ops.appendChild(d);
 
 }
 
 /* MATERIALES */
-function addMaterial(){
+function addMat(){
 
-const div=document.createElement("div");
+let d=document.createElement("div");
 
-div.innerHTML=`
+d.innerHTML=`
 <input placeholder="Material">
 <input type="number" placeholder="Cantidad">
 `;
 
-materiales.appendChild(div);
+mats.appendChild(d);
 
 }
 
-/* GUARDAR */
-async function guardarOT(){
-
-if(!descripcion.value.trim()){
-return alert("Descripción obligatoria");
-}
+/* GUARDAR OT */
+async function guardar(){
 
 await fetch(API,{
 method:"POST",
 body:JSON.stringify({
 action:"crearOT",
-emisorOT:emisorOT.value,
-hora:hora.value,
-maquina:maquina.value,
-proyecto:proyecto.value,
-estado:estado.value,
-descripcion:descripcion.value
+
+EMISOR_OT:emisorOT.value,
+HORA:hora.value,
+MAQUINA:maquina.value,
+PROYECTO:proyecto.value,
+ESTADO_OT:estado.value,
+
+DESCRIPCION_CREACION:desc.value,
+
+OPERARIOS:[...ops.querySelectorAll("div")].map(d=>({
+NOMBRE:d.children[0].value,
+TIEMPO:d.children[1].value
+})),
+
+MATERIALES:[...mats.querySelectorAll("div")].map(d=>({
+MATERIAL:d.children[0].value,
+CANTIDAD:d.children[1].value
+}))
 })
 });
 
-alert("OT guardada correctamente");
+alert("OT guardada");
 location.href="index.html";
 
-}
-
-function logout(){
-localStorage.clear();
-location.href="index.html";
 }
 
 init();
