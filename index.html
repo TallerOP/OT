@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión</title>
+<title>Gestión OT</title>
 
 <style>
 
@@ -16,30 +16,34 @@ background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.55);
 min-height:100vh;
 padding:15px;
 }
 
 .container{
-max-width:900px;
+max-width:950px;
 margin:auto;
 color:white;
 }
 
 .card{
-background:rgba(0,0,0,0.75);
+background:rgba(0,0,0,0.78);
 padding:15px;
-border-radius:10px;
+border-radius:12px;
 margin-bottom:15px;
 }
 
-label{display:block;margin-top:10px;font-weight:bold;}
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+}
 
 input,select,textarea,button{
 width:100%;
 padding:12px;
-margin-top:5px;
+margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:16px;
@@ -47,16 +51,16 @@ font-size:16px;
 
 textarea{min-height:100px;}
 
-.btn-red{background:red;color:white;}
-.btn-orange{background:orange;color:black;}
-.btn-yellow{background:gold;color:black;}
+.btn-red{background:#d32f2f;color:white;}
+.btn-orange{background:#f57c00;color:black;}
+.btn-yellow{background:#fbc02d;color:black;}
 .btn-blue{background:#1976d2;color:white;}
 
 .aviso{
 background:#222;
 padding:10px;
-margin-top:10px;
 border-radius:8px;
+margin-top:10px;
 }
 
 .hidden{display:none;}
@@ -69,8 +73,8 @@ border-radius:8px;
 <div class="overlay">
 <div class="container">
 
+<!-- LOGIN -->
 <div id="loginBox" class="card">
-
 <h2>Login</h2>
 
 <label>Usuario</label>
@@ -80,15 +84,17 @@ border-radius:8px;
 <input id="password" type="password">
 
 <button onclick="login()">Entrar</button>
-
 </div>
 
+<!-- MAIN -->
 <div id="mainBox" class="hidden">
 
 <div class="card">
 <button class="btn-red" onclick="logout()">Cerrar sesión</button>
+<h3 id="infoUser"></h3>
 </div>
 
+<!-- AVISO -->
 <div class="card">
 
 <h3>Nuevo Aviso</h3>
@@ -109,13 +115,15 @@ border-radius:8px;
 
 </div>
 
-<div id="otBox" class="card hidden">
+<!-- OT SOLO ROLES -->
+<div id="otPanel" class="card hidden">
 
 <button class="btn-blue" onclick="crearOT()">Generar OT</button>
 
 </div>
 
-<div id="avisosBox" class="card hidden">
+<!-- AVISOS -->
+<div id="avisosPanel" class="card hidden">
 
 <h3>Avisos pendientes</h3>
 <div id="listaAvisos"></div>
@@ -132,14 +140,10 @@ const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aK
 
 let USER=null;
 let LISTAS={};
-let EMISORES=[];
 
 async function login(){
 
-const u=usuario.value;
-const p=password.value;
-
-const r=await fetch(`${API}?action=login&usuario=${u}&password=${p}`);
+const r=await fetch(`${API}?action=login&usuario=${usuario.value}&password=${password.value}`);
 const d=await r.json();
 
 if(!d.ok)return alert(d.error);
@@ -150,19 +154,19 @@ localStorage.setItem("u",JSON.stringify(d));
 loginBox.classList.add("hidden");
 mainBox.classList.remove("hidden");
 
+infoUser.innerText=`${USER.usuario} (${USER.rol})`;
+
 await loadListas();
-await loadEmisores();
 
 if(USER.rol==="Produccion"){
-// ❌ bloquea acceso OT
-otBox.classList.add("hidden");
-avisosBox.classList.remove("hidden");
+otPanel.classList.add("hidden");
+avisosPanel.classList.remove("hidden");
 loadAvisos();
 return;
 }
 
-otBox.classList.remove("hidden");
-avisosBox.classList.remove("hidden");
+otPanel.classList.remove("hidden");
+avisosPanel.classList.remove("hidden");
 loadAvisos();
 
 }
@@ -171,21 +175,11 @@ async function loadListas(){
 
 const r=await fetch(`${API}?action=getListas`);
 const d=await r.json();
-
 LISTAS=d.listas;
 
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
 fill("proyecto","PROYECTO");
-
-}
-
-async function loadEmisores(){
-
-const r=await fetch(`${API}?action=getUsuarios`);
-const d=await r.json();
-
-EMISORES=d.usuarios.map(u=>u.emisor);
 
 }
 
@@ -204,14 +198,13 @@ s.appendChild(o);
 }
 
 /* AVISO */
-function crearAviso(){
+async function crearAviso(){
 
 if(!descripcion.value.trim()){
-alert("Descripción obligatoria");
-return;
+return alert("Descripción obligatoria");
 }
 
-fetch(API,{
+await fetch(API,{
 method:"POST",
 body:JSON.stringify({
 action:"crearAviso",
@@ -223,17 +216,9 @@ descripcion:descripcion.value
 })
 });
 
-}
+descripcion.value="";
+loadAvisos();
 
-/* SOLO ADMIN */
-function crearOT(){
-
-if(USER.rol==="Produccion"){
-alert("No autorizado");
-return;
-}
-
-location.href="ot.html";
 }
 
 /* AVISOS */
@@ -250,23 +235,19 @@ let div=document.createElement("div");
 div.className="aviso";
 div.id=a.avisoID;
 
-let acciones="";
+let btns="";
 
 if(USER.rol!=="Produccion"){
-acciones+=`
-<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>
-`;
+btns+=`<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>`;
 }
 
-acciones+=`
-<button class="btn-red" onclick="eliminar('${a.avisoID}')">Eliminar</button>
-`;
+btns+=`<button class="btn-red" onclick="eliminar('${a.avisoID}')">Eliminar</button>`;
 
 div.innerHTML=`
 <b>${a.maquina}</b><br>
 ${a.tipoAveria}<br>
 ${a.descripcion}<br><br>
-${acciones}
+${btns}
 `;
 
 listaAvisos.appendChild(div);
@@ -284,13 +265,21 @@ action:"rechazarAviso",
 avisoID:id,
 usuario:USER.usuario
 })
-}).then(()=>document.getElementById(id)?.remove());
+});
+
+document.getElementById(id)?.remove();
 
 }
 
 function convertir(id){
 
 location.href=`ot.html?aviso=${id}`;
+
+}
+
+function crearOT(){
+
+location.href="ot.html";
 
 }
 

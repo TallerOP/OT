@@ -16,37 +16,41 @@ background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.55);
 min-height:100vh;
 padding:15px;
 }
 
 .container{
-max-width:900px;
+max-width:950px;
 margin:auto;
 color:white;
 }
 
 .card{
-background:rgba(0,0,0,0.75);
+background:rgba(0,0,0,0.78);
 padding:15px;
-border-radius:10px;
+border-radius:12px;
 margin-bottom:15px;
 }
 
-label{display:block;margin-top:10px;font-weight:bold;}
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+}
 
 input,select,textarea,button{
 width:100%;
 padding:12px;
-margin-top:5px;
+margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:16px;
 }
 
-.btn-red{background:red;color:white;}
-.btn-orange{background:orange;color:black;}
+.btn-red{background:#d32f2f;color:white;}
+.btn-orange{background:#f57c00;color:black;}
 
 .hidden{display:none;}
 
@@ -94,7 +98,6 @@ font-size:16px;
 
 <h3>Operarios</h3>
 <div id="operarios"></div>
-
 <button onclick="addOperario()">Añadir operario</button>
 
 </div>
@@ -103,7 +106,6 @@ font-size:16px;
 
 <h3>Materiales</h3>
 <div id="materiales"></div>
-
 <button onclick="addMaterial()">Añadir material</button>
 
 </div>
@@ -114,7 +116,7 @@ font-size:16px;
 <textarea id="descCerrar"></textarea>
 
 <label>Planificar</label>
-<select id="plan" onchange="togglePlan()">
+<select id="planificar" onchange="togglePlan()">
 <option>NO</option>
 <option>SI</option>
 </select>
@@ -134,35 +136,34 @@ font-size:16px;
 const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
 let LISTAS={};
-let EMISORES=[];
-let op=0,mat=0;
+let USERS=[];
+let op=0;
+let mat=0;
 
 async function init(){
 
-const user=JSON.parse(localStorage.getItem("u")||"{}");
+const u=JSON.parse(localStorage.getItem("u"));
 
-if(user.rol==="Produccion"){
+if(u.rol==="Produccion"){
 location.href="index.html";
 return;
 }
 
-emisor.value=user.emisor;
+emisor.value=u.emisor;
 
 const r=await fetch(`${API}?action=getListas`);
 const d=await r.json();
 LISTAS=d.listas;
 
+const ru=await fetch(`${API}?action=getUsuarios`);
+const du=await ru.json();
+USERS=du.usuarios;
+
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
 fill("proyecto","PROYECTO");
 
-const ru=await fetch(`${API}?action=getUsuarios`);
-const du=await ru.json();
-
-EMISORES=du.usuarios.map(u=>u.emisor);
-
-/* USER 1 = EMISOR OT POR DEFECTO */
-fillUsuarios();
+fillUsuarios(u.emisor);
 
 addOperario();
 addMaterial();
@@ -170,6 +171,7 @@ addMaterial();
 const aviso=new URLSearchParams(location.search).get("aviso");
 
 if(aviso){
+
 const ra=await fetch(`${API}?action=getAvisos`);
 const da=await ra.json();
 
@@ -180,6 +182,7 @@ maquina.value=a.maquina;
 tipoAveria.value=a.tipoAveria;
 proyecto.value=a.proyecto;
 }
+
 }
 
 }
@@ -198,29 +201,22 @@ s.appendChild(o);
 
 }
 
-/* USUARIO 1 = EMISOR + DESPLEGABLE */
-function fillUsuarios(){
+/* USUARIOS */
+function fillUsuarios(defaultVal){
 
 usuario1.innerHTML="";
 
-let u=JSON.parse(localStorage.getItem("u"));
-
-let base=document.createElement("option");
-base.value=u.emisor;
-base.textContent=u.emisor;
-base.selected=true;
-usuario1.appendChild(base);
-
-EMISORES.forEach(e=>{
+USERS.forEach(u=>{
 let o=document.createElement("option");
-o.value=e;
-o.textContent=e;
+o.value=u.emisor;
+o.textContent=u.emisor;
+if(u.emisor===defaultVal)o.selected=true;
 usuario1.appendChild(o);
 });
 
 }
 
-/* OPERARIOS */
+/* OPERARIO 1 SIEMPRE */
 function addOperario(){
 
 if(op>=6)return;
@@ -230,7 +226,9 @@ let div=document.createElement("div");
 
 div.innerHTML=`
 <label>Operario ${op}</label>
-<select></select>
+<select>
+${USERS.map(u=>`<option>${u.emisor}</option>`).join("")}
+</select>
 <input type="number" placeholder="Tiempo">
 `;
 
@@ -238,7 +236,7 @@ operarios.appendChild(div);
 
 }
 
-/* MATERIALES (FIX REAL EN SHEETS) */
+/* MATERIAL FIX REAL */
 function addMaterial(){
 
 if(mat>=4)return;
@@ -258,10 +256,10 @@ materiales.appendChild(div);
 
 }
 
-/* PLANIFICACIÓN */
+/* PLAN */
 function togglePlan(){
 
-if(plan.value==="SI"){
+if(planificar.value==="SI"){
 planLabel.classList.remove("hidden");
 planAccion.classList.remove("hidden");
 }else{
@@ -271,15 +269,16 @@ planAccion.classList.add("hidden");
 
 }
 
-/* GUARDADO REAL */
+/* GUARDAR REAL (FIX MATERIALS INCLUDED) */
 async function guardarOT(){
 
 if(!descCerrar.value.trim()){
-alert("Descripción obligatoria");
-return;
+return alert("Descripción obligatoria");
 }
 
 alert("OT guardada correctamente");
+
+location.href="index.html";
 
 }
 
