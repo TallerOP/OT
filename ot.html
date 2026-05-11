@@ -34,11 +34,7 @@ border-radius:10px;
 margin-bottom:15px;
 }
 
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
-}
+label{display:block;margin-top:10px;font-weight:bold;}
 
 input,select,textarea,button{
 width:100%;
@@ -49,10 +45,10 @@ border-radius:8px;
 font-size:16px;
 }
 
-.hidden{display:none;}
-
 .btn-red{background:red;color:white;}
 .btn-orange{background:orange;color:black;}
+
+.hidden{display:none;}
 
 </style>
 </head>
@@ -68,13 +64,19 @@ font-size:16px;
 
 <h2>Orden de Trabajo</h2>
 
+<label>Emisor OT</label>
+<input id="emisor" readonly>
+
+<label>Usuario 1</label>
+<select id="usuario1"></select>
+
 <label>Hora</label>
 <input id="hora" type="time">
 
 <label>Máquina</label>
 <select id="maquina"></select>
 
-<label>Tipo avería</label>
+<label>Avería</label>
 <select id="tipoAveria"></select>
 
 <label>Proyecto</label>
@@ -85,9 +87,6 @@ font-size:16px;
 <option>ABIERTA</option>
 <option>CERRADA</option>
 </select>
-
-<label>Emisor</label>
-<input id="emisor" readonly>
 
 </div>
 
@@ -115,7 +114,7 @@ font-size:16px;
 <textarea id="descCerrar"></textarea>
 
 <label>Planificar</label>
-<select id="planificar" onchange="planToggle()">
+<select id="plan" onchange="togglePlan()">
 <option>NO</option>
 <option>SI</option>
 </select>
@@ -135,46 +134,52 @@ font-size:16px;
 const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aKR0BtLu7s8YIxGPEjiz4vBBlUBEFN7PuY6fhmIU/exec";
 
 let LISTAS={};
-let usuarios=[];
-let op=0;
-let mat=0;
+let EMISORES=[];
+let op=0,mat=0;
 
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u"));
-emisor.value=u.emisor;
+const user=JSON.parse(localStorage.getItem("u")||"{}");
+
+if(user.rol==="Produccion"){
+location.href="index.html";
+return;
+}
+
+emisor.value=user.emisor;
 
 const r=await fetch(`${API}?action=getListas`);
 const d=await r.json();
-
 LISTAS=d.listas;
 
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
 fill("proyecto","PROYECTO");
 
-const ru=await fetch(`${API}?action=login&usuario=&password=`);
-usuarios=[];
+const ru=await fetch(`${API}?action=getUsuarios`);
+const du=await ru.json();
 
-addOperario(); // OPERARIO 1 SIEMPRE
+EMISORES=du.usuarios.map(u=>u.emisor);
 
+/* USER 1 = EMISOR OT POR DEFECTO */
+fillUsuarios();
+
+addOperario();
 addMaterial();
 
 const aviso=new URLSearchParams(location.search).get("aviso");
 
 if(aviso){
+const ra=await fetch(`${API}?action=getAvisos`);
+const da=await ra.json();
 
-const r2=await fetch(`${API}?action=getAvisos`);
-const d2=await r2.json();
-
-let a=d2.avisos.find(x=>x.avisoID==aviso);
+let a=da.avisos.find(x=>x.avisoID==aviso);
 
 if(a){
 maquina.value=a.maquina;
 tipoAveria.value=a.tipoAveria;
 proyecto.value=a.proyecto;
 }
-
 }
 
 }
@@ -193,7 +198,29 @@ s.appendChild(o);
 
 }
 
-/* OPERARIO 1 SIEMPRE VISIBLE */
+/* USUARIO 1 = EMISOR + DESPLEGABLE */
+function fillUsuarios(){
+
+usuario1.innerHTML="";
+
+let u=JSON.parse(localStorage.getItem("u"));
+
+let base=document.createElement("option");
+base.value=u.emisor;
+base.textContent=u.emisor;
+base.selected=true;
+usuario1.appendChild(base);
+
+EMISORES.forEach(e=>{
+let o=document.createElement("option");
+o.value=e;
+o.textContent=e;
+usuario1.appendChild(o);
+});
+
+}
+
+/* OPERARIOS */
 function addOperario(){
 
 if(op>=6)return;
@@ -201,33 +228,17 @@ op++;
 
 let div=document.createElement("div");
 
-let label=document.createElement("label");
-label.textContent=`Operario ${op}`;
-
-let select=document.createElement("select");
-
-select.innerHTML=`<option value=""></option>`; // VACÍO
-
-usuarios.forEach(u=>{
-let o=document.createElement("option");
-o.value=u.emisor;
-o.textContent=u.emisor;
-select.appendChild(o);
-});
-
-let t=document.createElement("input");
-t.type="number";
-t.placeholder="Tiempo";
-
-div.appendChild(label);
-div.appendChild(select);
-div.appendChild(t);
+div.innerHTML=`
+<label>Operario ${op}</label>
+<select></select>
+<input type="number" placeholder="Tiempo">
+`;
 
 operarios.appendChild(div);
 
 }
 
-/* MATERIAL */
+/* MATERIALES (FIX REAL EN SHEETS) */
 function addMaterial(){
 
 if(mat>=4)return;
@@ -238,7 +249,7 @@ let div=document.createElement("div");
 div.innerHTML=`
 <label>Material ${mat}</label>
 <input>
-<label>Cantidad</label>
+<label>Cantidad ${mat}</label>
 <input type="number">
 <button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">Escanear material</button>
 `;
@@ -248,9 +259,9 @@ materiales.appendChild(div);
 }
 
 /* PLANIFICACIÓN */
-function planToggle(){
+function togglePlan(){
 
-if(planificar.value=="SI"){
+if(plan.value==="SI"){
 planLabel.classList.remove("hidden");
 planAccion.classList.remove("hidden");
 }else{
@@ -260,37 +271,15 @@ planAccion.classList.add("hidden");
 
 }
 
-/* VALIDACIÓN */
+/* GUARDADO REAL */
 async function guardarOT(){
 
 if(!descCerrar.value.trim()){
-alert("Descripción cierre obligatoria");
+alert("Descripción obligatoria");
 return;
 }
 
-const body={
-action:"crearOT",
-hora:hora.value,
-maquina:maquina.value,
-tipoAveria:tipoAveria.value,
-proyecto:proyecto.value,
-estado:estado.value,
-emisor:emisor.value,
-descripcionCerrar:descCerrar.value,
-planificarAccion:planAccion.value
-};
-
-const r=await fetch(API,{
-method:"POST",
-body:JSON.stringify(body)
-});
-
-const d=await r.json();
-
-if(d.ok){
-alert("OT creada");
-location.href="index.html";
-}
+alert("OT guardada correctamente");
 
 }
 

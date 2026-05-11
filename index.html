@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión Avisos</title>
+<title>Gestión</title>
 
 <style>
 
@@ -34,11 +34,7 @@ border-radius:10px;
 margin-bottom:15px;
 }
 
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
-}
+label{display:block;margin-top:10px;font-weight:bold;}
 
 input,select,textarea,button{
 width:100%;
@@ -51,11 +47,10 @@ font-size:16px;
 
 textarea{min-height:100px;}
 
-button{cursor:pointer;font-weight:bold;}
-
 .btn-red{background:red;color:white;}
 .btn-orange{background:orange;color:black;}
 .btn-yellow{background:gold;color:black;}
+.btn-blue{background:#1976d2;color:white;}
 
 .aviso{
 background:#222;
@@ -101,7 +96,7 @@ border-radius:8px;
 <label>Máquina</label>
 <select id="maquina"></select>
 
-<label>Tipo avería</label>
+<label>Avería</label>
 <select id="tipoAveria"></select>
 
 <label>Proyecto</label>
@@ -116,7 +111,7 @@ border-radius:8px;
 
 <div id="otBox" class="card hidden">
 
-<button class="btn-orange" onclick="crearOTDirecta()">Crear OT</button>
+<button class="btn-blue" onclick="crearOT()">Generar OT</button>
 
 </div>
 
@@ -130,7 +125,6 @@ border-radius:8px;
 </div>
 
 </div>
-</div>
 
 <script>
 
@@ -138,6 +132,7 @@ const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aK
 
 let USER=null;
 let LISTAS={};
+let EMISORES=[];
 
 async function login(){
 
@@ -155,13 +150,20 @@ localStorage.setItem("u",JSON.stringify(d));
 loginBox.classList.add("hidden");
 mainBox.classList.remove("hidden");
 
-loadListas();
+await loadListas();
+await loadEmisores();
 
-if(USER.rol!="Operario"){
+if(USER.rol==="Produccion"){
+// ❌ bloquea acceso OT
+otBox.classList.add("hidden");
+avisosBox.classList.remove("hidden");
+loadAvisos();
+return;
+}
+
 otBox.classList.remove("hidden");
 avisosBox.classList.remove("hidden");
 loadAvisos();
-}
 
 }
 
@@ -175,6 +177,15 @@ LISTAS=d.listas;
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
 fill("proyecto","PROYECTO");
+
+}
+
+async function loadEmisores(){
+
+const r=await fetch(`${API}?action=getUsuarios`);
+const d=await r.json();
+
+EMISORES=d.usuarios.map(u=>u.emisor);
 
 }
 
@@ -192,7 +203,7 @@ s.appendChild(o);
 
 }
 
-/* VALIDACIÓN */
+/* AVISO */
 function crearAviso(){
 
 if(!descripcion.value.trim()){
@@ -206,36 +217,26 @@ body:JSON.stringify({
 action:"crearAviso",
 usuario:USER.usuario,
 maquina:maquina.value,
-proyecto:proyecto.value,
 tipoAveria:tipoAveria.value,
+proyecto:proyecto.value,
 descripcion:descripcion.value
 })
-}).then(()=>{
-
-alert("Aviso creado");
-descripcion.value="";
-
 });
 
 }
 
-function eliminarAviso(id){
+/* SOLO ADMIN */
+function crearOT(){
 
-fetch(API,{
-method:"POST",
-body:JSON.stringify({
-action:"rechazarAviso",
-avisoID:id,
-usuario:USER.usuario
-})
-}).then(()=>{
-
-document.getElementById(id)?.remove();
-
-});
-
+if(USER.rol==="Produccion"){
+alert("No autorizado");
+return;
 }
 
+location.href="ot.html";
+}
+
+/* AVISOS */
 async function loadAvisos(){
 
 const r=await fetch(`${API}?action=getAvisos`);
@@ -249,13 +250,23 @@ let div=document.createElement("div");
 div.className="aviso";
 div.id=a.avisoID;
 
+let acciones="";
+
+if(USER.rol!=="Produccion"){
+acciones+=`
+<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>
+`;
+}
+
+acciones+=`
+<button class="btn-red" onclick="eliminar('${a.avisoID}')">Eliminar</button>
+`;
+
 div.innerHTML=`
 <b>${a.maquina}</b><br>
 ${a.tipoAveria}<br>
 ${a.descripcion}<br><br>
-
-<button class="btn-orange" onclick="convertir('${a.avisoID}')">Convertir OT</button>
-<button class="btn-red" onclick="eliminarAviso('${a.avisoID}')">Eliminar</button>
+${acciones}
 `;
 
 listaAvisos.appendChild(div);
@@ -264,12 +275,23 @@ listaAvisos.appendChild(div);
 
 }
 
-function convertir(id){
-location.href=`ot.html?aviso=${id}`;
+function eliminar(id){
+
+fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"rechazarAviso",
+avisoID:id,
+usuario:USER.usuario
+})
+}).then(()=>document.getElementById(id)?.remove());
+
 }
 
-function crearOTDirecta(){
-location.href="ot.html";
+function convertir(id){
+
+location.href=`ot.html?aviso=${id}`;
+
 }
 
 function logout(){
