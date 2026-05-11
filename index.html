@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión</title>
+<title>Gestión Avisos</title>
 
 <style>
+
+*{box-sizing:border-box;}
 
 body{
 margin:0;
@@ -14,7 +16,7 @@ background:url('op.png') center/cover fixed;
 }
 
 .overlay{
-background:rgba(0,0,0,0.5); /* 🔥 50% transparencia */
+background:rgba(0,0,0,0.5);
 min-height:100vh;
 padding:15px;
 }
@@ -28,14 +30,20 @@ color:white;
 .card{
 background:rgba(0,0,0,0.75);
 padding:15px;
-margin-bottom:15px;
 border-radius:10px;
+margin-bottom:15px;
+}
+
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
 }
 
 input,select,textarea,button{
 width:100%;
 padding:12px;
-margin-top:10px;
+margin-top:5px;
 border:none;
 border-radius:8px;
 font-size:16px;
@@ -64,14 +72,18 @@ border-radius:8px;
 <body>
 
 <div class="overlay">
-
 <div class="container">
 
 <div id="loginBox" class="card">
 
 <h2>Login</h2>
-<input id="usuario" placeholder="Usuario">
-<input id="password" type="password" placeholder="Contraseña">
+
+<label>Usuario</label>
+<input id="usuario">
+
+<label>Contraseña</label>
+<input id="password" type="password">
+
 <button onclick="login()">Entrar</button>
 
 </div>
@@ -86,19 +98,23 @@ border-radius:8px;
 
 <h3>Nuevo Aviso</h3>
 
+<label>Máquina</label>
 <select id="maquina"></select>
+
+<label>Tipo avería</label>
 <select id="tipoAveria"></select>
 
-<!-- 🔥 PROYECTO ahora desplegable -->
+<label>Proyecto</label>
 <select id="proyecto"></select>
 
-<textarea id="descripcion" placeholder="Descripción"></textarea>
+<label>Descripción *</label>
+<textarea id="descripcion"></textarea>
 
 <button class="btn-yellow" onclick="crearAviso()">Crear Aviso</button>
 
 </div>
 
-<div id="otDirecta" class="card hidden">
+<div id="otBox" class="card hidden">
 
 <button class="btn-orange" onclick="crearOTDirecta()">Crear OT</button>
 
@@ -114,6 +130,7 @@ border-radius:8px;
 </div>
 
 </div>
+</div>
 
 <script>
 
@@ -121,7 +138,6 @@ const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aK
 
 let USER=null;
 let LISTAS={};
-let EMISORES=[];
 
 async function login(){
 
@@ -131,20 +147,19 @@ const p=password.value;
 const r=await fetch(`${API}?action=login&usuario=${u}&password=${p}`);
 const d=await r.json();
 
-if(!d.ok)return alert("Login incorrecto");
+if(!d.ok)return alert(d.error);
 
 USER=d;
 localStorage.setItem("u",JSON.stringify(d));
 
-document.getElementById("loginBox").classList.add("hidden");
-document.getElementById("mainBox").classList.remove("hidden");
+loginBox.classList.add("hidden");
+mainBox.classList.remove("hidden");
 
 loadListas();
-loadEmisores();
 
 if(USER.rol!="Operario"){
-document.getElementById("otDirecta").classList.remove("hidden");
-document.getElementById("avisosBox").classList.remove("hidden");
+otBox.classList.remove("hidden");
+avisosBox.classList.remove("hidden");
 loadAvisos();
 }
 
@@ -159,7 +174,7 @@ LISTAS=d.listas;
 
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
-fill("proyecto","PROYECTO"); // 🔥 NUEVO
+fill("proyecto","PROYECTO");
 
 }
 
@@ -177,16 +192,13 @@ s.appendChild(o);
 
 }
 
-async function loadEmisores(){
-
-const r=await fetch(`${API}?action=getUsuarios`);
-const d=await r.json();
-
-EMISORES=d.usuarios.map(u=>u.emisor);
-
-}
-
+/* VALIDACIÓN */
 function crearAviso(){
+
+if(!descripcion.value.trim()){
+alert("Descripción obligatoria");
+return;
+}
 
 fetch(API,{
 method:"POST",
@@ -207,7 +219,6 @@ descripcion.value="";
 
 }
 
-/* 🔥 ELIMINAR AVISO DESDE UI */
 function eliminarAviso(id){
 
 fetch(API,{
@@ -219,7 +230,7 @@ usuario:USER.usuario
 })
 }).then(()=>{
 
-document.getElementById(id).remove(); // 🔥 DESAPARECE INMEDIATAMENTE
+document.getElementById(id)?.remove();
 
 });
 
@@ -254,9 +265,7 @@ listaAvisos.appendChild(div);
 }
 
 function convertir(id){
-
 location.href=`ot.html?aviso=${id}`;
-
 }
 
 function crearOTDirecta(){

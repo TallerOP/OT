@@ -7,6 +7,8 @@
 
 <style>
 
+*{box-sizing:border-box;}
+
 body{
 margin:0;
 font-family:Arial;
@@ -32,20 +34,25 @@ border-radius:10px;
 margin-bottom:15px;
 }
 
+label{
+display:block;
+margin-top:10px;
+font-weight:bold;
+}
+
 input,select,textarea,button{
 width:100%;
 padding:12px;
-margin-top:10px;
+margin-top:5px;
 border:none;
 border-radius:8px;
 font-size:16px;
 }
 
+.hidden{display:none;}
+
 .btn-red{background:red;color:white;}
 .btn-orange{background:orange;color:black;}
-.btn-yellow{background:gold;color:black;}
-
-.hidden{display:none;}
 
 </style>
 </head>
@@ -53,28 +60,33 @@ font-size:16px;
 <body>
 
 <div class="overlay">
-
 <div class="container">
 
 <div class="card">
 
 <button class="btn-red" onclick="logout()">Cerrar sesión</button>
 
-<h2>OT</h2>
+<h2>Orden de Trabajo</h2>
 
+<label>Hora</label>
 <input id="hora" type="time">
 
+<label>Máquina</label>
 <select id="maquina"></select>
+
+<label>Tipo avería</label>
 <select id="tipoAveria"></select>
 
-<!-- 🔥 PROYECTO DESPLEGABLE -->
+<label>Proyecto</label>
 <select id="proyecto"></select>
 
+<label>Estado</label>
 <select id="estado">
 <option>ABIERTA</option>
 <option>CERRADA</option>
 </select>
 
+<label>Emisor</label>
 <input id="emisor" readonly>
 
 </div>
@@ -82,7 +94,6 @@ font-size:16px;
 <div class="card">
 
 <h3>Operarios</h3>
-
 <div id="operarios"></div>
 
 <button onclick="addOperario()">Añadir operario</button>
@@ -92,7 +103,6 @@ font-size:16px;
 <div class="card">
 
 <h3>Materiales</h3>
-
 <div id="materiales"></div>
 
 <button onclick="addMaterial()">Añadir material</button>
@@ -101,21 +111,23 @@ font-size:16px;
 
 <div class="card">
 
-<textarea id="descripcionCerrar" placeholder="Descripción cierre"></textarea>
+<label>Descripción cierre *</label>
+<textarea id="descCerrar"></textarea>
 
-<select id="planificar">
+<label>Planificar</label>
+<select id="planificar" onchange="planToggle()">
 <option>NO</option>
 <option>SI</option>
 </select>
 
-<input id="planAccion" placeholder="Planificación" class="hidden">
+<label id="planLabel" class="hidden">Descripción planificación</label>
+<textarea id="planAccion" class="hidden"></textarea>
 
-<button class="btn-orange" onclick="guardar()">Guardar OT</button>
+<button class="btn-orange" onclick="guardarOT()">Guardar OT</button>
 
 </div>
 
 </div>
-
 </div>
 
 <script>
@@ -124,11 +136,13 @@ const API="https://script.google.com/macros/s/AKfycbxCLha_hKJ9I76bZeyoMQScn7C4aK
 
 let LISTAS={};
 let usuarios=[];
-
 let op=0;
 let mat=0;
 
 async function init(){
+
+const u=JSON.parse(localStorage.getItem("u"));
+emisor.value=u.emisor;
 
 const r=await fetch(`${API}?action=getListas`);
 const d=await r.json();
@@ -137,23 +151,23 @@ LISTAS=d.listas;
 
 fill("maquina","MAQUINA");
 fill("tipoAveria","AVERIA");
-fill("proyecto","PROYECTO"); // 🔥
+fill("proyecto","PROYECTO");
 
-const u=await fetch(`${API}?action=getUsuarios`);
-const ud=await u.json();
+const ru=await fetch(`${API}?action=login&usuario=&password=`);
+usuarios=[];
 
-usuarios=ud.usuarios;
+addOperario(); // OPERARIO 1 SIEMPRE
 
-emisor.value=JSON.parse(localStorage.getItem("u")).emisor;
+addMaterial();
 
 const aviso=new URLSearchParams(location.search).get("aviso");
 
 if(aviso){
 
-const r=await fetch(`${API}?action=getAvisos`);
-const d=await r.json();
+const r2=await fetch(`${API}?action=getAvisos`);
+const d2=await r2.json();
 
-let a=d.avisos.find(x=>x.avisoID==aviso);
+let a=d2.avisos.find(x=>x.avisoID==aviso);
 
 if(a){
 maquina.value=a.maquina;
@@ -162,9 +176,6 @@ proyecto.value=a.proyecto;
 }
 
 }
-
-addOperario(); // 🔥 VACÍO POR DEFECTO
-addMaterial();
 
 }
 
@@ -182,17 +193,20 @@ s.appendChild(o);
 
 }
 
-/* 🔥 OPERARIOS DESPLEGABLES VACÍOS */
+/* OPERARIO 1 SIEMPRE VISIBLE */
 function addOperario(){
 
 if(op>=6)return;
-
 op++;
 
 let div=document.createElement("div");
 
+let label=document.createElement("label");
+label.textContent=`Operario ${op}`;
+
 let select=document.createElement("select");
-select.innerHTML=`<option value=""></option>`; // 🔥 VACÍO POR DEFECTO
+
+select.innerHTML=`<option value=""></option>`; // VACÍO
 
 usuarios.forEach(u=>{
 let o=document.createElement("option");
@@ -201,30 +215,31 @@ o.textContent=u.emisor;
 select.appendChild(o);
 });
 
-div.appendChild(select);
-
 let t=document.createElement("input");
-t.placeholder="Tiempo";
 t.type="number";
+t.placeholder="Tiempo";
 
+div.appendChild(label);
+div.appendChild(select);
 div.appendChild(t);
 
 operarios.appendChild(div);
 
 }
 
-/* 🔥 MATERIAL */
+/* MATERIAL */
 function addMaterial(){
 
 if(mat>=4)return;
-
 mat++;
 
 let div=document.createElement("div");
 
 div.innerHTML=`
-<input placeholder="Material ${mat}">
-<input type="number" placeholder="Cantidad ${mat}">
+<label>Material ${mat}</label>
+<input>
+<label>Cantidad</label>
+<input type="number">
 <button onclick="window.open('https://tallerop.github.io/gestionrecambios/')">Escanear material</button>
 `;
 
@@ -232,9 +247,50 @@ materiales.appendChild(div);
 
 }
 
-function guardar(){
+/* PLANIFICACIÓN */
+function planToggle(){
 
-alert("OT guardada (conectarlo a Apps Script aquí)");
+if(planificar.value=="SI"){
+planLabel.classList.remove("hidden");
+planAccion.classList.remove("hidden");
+}else{
+planLabel.classList.add("hidden");
+planAccion.classList.add("hidden");
+}
+
+}
+
+/* VALIDACIÓN */
+async function guardarOT(){
+
+if(!descCerrar.value.trim()){
+alert("Descripción cierre obligatoria");
+return;
+}
+
+const body={
+action:"crearOT",
+hora:hora.value,
+maquina:maquina.value,
+tipoAveria:tipoAveria.value,
+proyecto:proyecto.value,
+estado:estado.value,
+emisor:emisor.value,
+descripcionCerrar:descCerrar.value,
+planificarAccion:planAccion.value
+};
+
+const r=await fetch(API,{
+method:"POST",
+body:JSON.stringify(body)
+});
+
+const d=await r.json();
+
+if(d.ok){
+alert("OT creada");
+location.href="index.html";
+}
 
 }
 
