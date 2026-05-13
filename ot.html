@@ -45,11 +45,6 @@ border-radius:8px;
 font-size:16px;
 }
 
-textarea{
-min-height:90px;
-resize:vertical;
-}
-
 .row{
 display:flex;
 gap:8px;
@@ -57,12 +52,23 @@ flex-wrap:wrap;
 margin-top:10px;
 }
 
-.row>*{flex:1;min-width:120px;}
+.row>*{
+flex:1;
+min-width:120px;
+}
 
-.btn-orange{background:#f57c00;}
-.btn-red{background:#d32f2f;color:#fff;}
+textarea{
+min-height:90px;
+resize:vertical;
+}
 
-.hidden{display:none;}
+.hidden{
+display:none;
+}
+
+.btn-orange{
+background:#f57c00;
+}
 
 </style>
 </head>
@@ -73,8 +79,6 @@ margin-top:10px;
 
 <div class="card">
 
-<h2>OT</h2>
-
 <label>Emisor OT</label>
 <select id="emisorOT"></select>
 
@@ -84,7 +88,7 @@ margin-top:10px;
 <label>Proyecto</label>
 <select id="proyecto"></select>
 
-<label>Código avería</label>
+<label>Tipo avería</label>
 <select id="codigoAveria"></select>
 
 <label>Hora</label>
@@ -98,16 +102,24 @@ margin-top:10px;
 <div class="card">
 
 <h3>Operarios</h3>
+
 <div id="ops"></div>
-<button onclick="addOp()">Añadir operario</button>
+
+<button onclick="addOp()">
+Añadir operario
+</button>
 
 </div>
 
 <div class="card">
 
 <h3>Materiales</h3>
+
 <div id="mats"></div>
-<button onclick="addMat()">Añadir material</button>
+
+<button onclick="addMat()">
+Añadir material
+</button>
 
 </div>
 
@@ -152,13 +164,6 @@ let LISTAS={};
 
 async function init(){
 
-const u=JSON.parse(localStorage.getItem("u")||"{}");
-
-if(!u.usuario){
-location.href="index.html";
-return;
-}
-
 const r=await fetch(API+"?action=getListas");
 const d=await r.json();
 
@@ -169,18 +174,12 @@ fill(maquina,"MAQUINA");
 fill(proyecto,"PROYECTO");
 fill(codigoAveria,"AVERIA");
 
-if(u.emisor) emisorOT.value=u.emisor;
-
 addOp();
 addMat();
 
 await loadAviso();
 
 }
-
-/* =========================
-   FIX CRÍTICO: CABECERAS REALES
-========================= */
 
 function fill(sel,key){
 
@@ -189,27 +188,27 @@ sel.innerHTML="";
 (LISTAS[key]||[]).forEach(v=>{
 
 let o=document.createElement("option");
+
 o.value=v;
 o.textContent=v;
+
 sel.appendChild(o);
 
 });
 
 }
 
-/* =========================
-   AVISO
-========================= */
-
 async function loadAviso(){
 
 const id=new URLSearchParams(location.search).get("aviso");
+
 if(!id) return;
 
 const r=await fetch(API+"?action=getAvisos");
 const d=await r.json();
 
 const a=(d.avisos||[]).find(x=>x.avisoID===id);
+
 if(!a) return;
 
 maquina.value=a.maquina||"";
@@ -219,18 +218,15 @@ descCrear.value=a.descripcion||"";
 
 }
 
-/* =========================
-   OPERARIOS (FIX 4 OK)
-========================= */
-
 function addOp(){
 
 if(ops.children.length>=6){
-alert("Máximo 6 operarios");
+alert("Máximo 6");
 return;
 }
 
 let div=document.createElement("div");
+
 div.className="row";
 
 div.innerHTML=`
@@ -244,18 +240,15 @@ fill(div.querySelector(".opSel"),"EMISOR OT");
 
 }
 
-/* =========================
-   MATERIALES
-========================= */
-
 function addMat(){
 
 if(mats.children.length>=4){
-alert("Máximo 4 materiales");
+alert("Máximo 4");
 return;
 }
 
 let div=document.createElement("div");
+
 div.className="row";
 
 div.innerHTML=`
@@ -267,10 +260,6 @@ mats.appendChild(div);
 
 }
 
-/* =========================
-   PLANIFICACION
-========================= */
-
 function togglePlan(){
 
 planBox.classList.toggle(
@@ -280,35 +269,32 @@ planificar.value!=="SI"
 
 }
 
-/* =========================
-   GUARDAR OT (FIX DEFINITIVO CAMPOS)
-========================= */
-
 async function guardarOT(){
 
-if(!descCrear.value.trim()){
-alert("Descripción obligatoria");
-return;
-}
+const OPERARIOS=[...ops.querySelectorAll(".row")]
+.map(r=>({
 
-/* OPERARIOS */
-const OPERARIOS=[...ops.querySelectorAll(".row")].map(r=>({
-NOMBRE:r.querySelector(".opSel").value||"",
-TIEMPO:r.querySelector(".opTime").value||""
+NOMBRE:r.querySelector(".opSel").value,
+TIEMPO:r.querySelector(".opTime").value
+
 }));
 
-/* MATERIALES */
-const MATERIALES=[...mats.querySelectorAll(".row")].map(r=>({
-MATERIAL:r.querySelector(".matName").value||"",
-CANTIDAD:r.querySelector(".matQty").value||""
+const MATERIALES=[...mats.querySelectorAll(".row")]
+.map(r=>({
+
+MATERIAL:r.querySelector(".matName").value,
+CANTIDAD:r.querySelector(".matQty").value
+
 }));
 
-const payload={
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
 
 action:"crearOT",
 
-OT:"",
 EMISOR_OT:emisorOT.value,
+
 MAQUINA:maquina.value,
 PROYECTO:proyecto.value,
 
@@ -319,28 +305,25 @@ TIEMPO_INTERVENCION:tiempoInt.value,
 
 DESCRIPCION_CREACION:descCrear.value,
 
-/* 🔥 FIX REAL */
+/* FIX */
 DESCRIPCION_CIERRE:descCerrar.value,
 
-/* 🔥 FIX REAL */
-PLANIFICAR_ACCION:planificar.value,
-
+/* FIX */
 DESCRIPCION_PLANIFICACION:
 planificar.value==="SI"
 ? planAccion.value
 : "",
 
+PLANIFICAR:"SI",
+
 OPERARIOS,
 MATERIALES
 
-};
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify(payload)
+})
 });
 
 alert("OT guardada");
+
 location.href="index.html";
 
 }

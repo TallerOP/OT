@@ -7,51 +7,26 @@
 
 <style>
 
-*{
-box-sizing:border-box;
-}
-
-:root{
-
---bg-overlay:rgba(0,0,0,.55);
---card-bg:rgba(0,0,0,.82);
---text:#ffffff;
---input-bg:#ffffff;
---input-text:#000000;
-
-}
-
-body.light{
-
---bg-overlay:rgba(255,255,255,.75);
---card-bg:rgba(255,255,255,.92);
---text:#111111;
---input-bg:#ffffff;
---input-text:#000000;
-
-}
+*{box-sizing:border-box;}
 
 body{
 margin:0;
 font-family:Arial,sans-serif;
 background:url('op.png') center/cover fixed;
-transition:.3s;
 }
 
 .overlay{
-background:var(--bg-overlay);
+background:rgba(0,0,0,.55);
 min-height:100vh;
 padding:10px;
-transition:.3s;
 }
 
 .card{
-background:var(--card-bg);
+background:rgba(0,0,0,.82);
 padding:14px;
 border-radius:12px;
 margin-bottom:12px;
-color:var(--text);
-transition:.3s;
+color:#fff;
 }
 
 label{
@@ -68,8 +43,6 @@ margin-top:6px;
 border:none;
 border-radius:8px;
 font-size:16px;
-background:var(--input-bg);
-color:var(--input-text);
 }
 
 textarea{
@@ -77,57 +50,25 @@ min-height:90px;
 resize:vertical;
 }
 
-button{
-cursor:pointer;
+.rowBtns{
+display:flex;
+gap:8px;
 }
 
-.btn-yellow{
-background:#fbc02d;
-color:#000;
+.rowBtns button{
+width:49.95%;
 }
 
-.btn-red{
-background:#d32f2f;
-color:#fff;
-}
-
-.btn-blue{
-background:#1976d2;
-color:#fff;
-}
-
-.btn-orange{
-background:#f57c00;
-color:#000;
-}
-
-.btn-mode{
-background:#555;
-color:#fff;
-}
+.btn-yellow{background:#fbc02d;}
+.btn-blue{background:#1976d2;color:#fff;}
+.btn-orange{background:#f57c00;}
+.btn-red{background:#d32f2f;color:#fff;}
 
 .aviso{
 background:#222;
 padding:12px;
 margin-top:10px;
 border-radius:10px;
-overflow-wrap:break-word;
-}
-
-body.light .aviso{
-background:#f1f1f1;
-color:#111;
-}
-
-.rowBtns{
-display:flex;
-gap:8px;
-margin-top:12px;
-flex-wrap:nowrap;
-}
-
-.rowBtns button{
-width:49.95%;
 }
 
 .hidden{
@@ -135,10 +76,9 @@ display:none;
 }
 
 #msgAviso{
-margin-top:10px;
 color:#00ff90;
 font-weight:bold;
-font-size:16px;
+margin-top:10px;
 }
 
 </style>
@@ -148,7 +88,6 @@ font-size:16px;
 
 <div class="overlay">
 
-<!-- LOGIN -->
 <div id="loginBox" class="card">
 
 <h2>Login</h2>
@@ -163,29 +102,19 @@ font-size:16px;
 
 </div>
 
-<!-- MAIN -->
 <div id="mainBox" class="hidden">
 
 <div class="card">
-
-<div class="rowBtns">
 
 <button class="btn-red" onclick="logout()">
 Cerrar sesión
 </button>
 
-<button class="btn-mode" onclick="toggleTheme()">
-Modo oscuro/claro
-</button>
-
 </div>
 
-</div>
-
-<!-- NUEVO AVISO -->
 <div class="card">
 
-<h3>Nuevo Aviso</h3>
+<h3>Nuevo aviso</h3>
 
 <label>Máquina</label>
 <select id="maquina"></select>
@@ -205,17 +134,20 @@ Modo oscuro/claro
 Crear aviso
 </button>
 
-<button id="btnGenerarOT" class="btn-blue hidden" onclick="crearOT()">
+<button id="btnOT"
+class="btn-blue hidden"
+onclick="crearOTDirecta()">
+
 Generar OT
+
 </button>
 
 </div>
 
-<p id="msgAviso"></p>
+<div id="msgAviso"></div>
 
 </div>
 
-<!-- AVISOS -->
 <div class="card">
 
 <h3>Avisos pendientes</h3>
@@ -234,37 +166,6 @@ const API="https://script.google.com/macros/s/AKfycbwtDsMS402VpKauUYAArwIIPq7znN
 
 let USER=null;
 let LISTAS={};
-
-/* =========================
-   TEMA
-========================= */
-
-function toggleTheme(){
-
-document.body.classList.toggle("light");
-
-localStorage.setItem(
-"theme",
-document.body.classList.contains("light")
-? "light"
-: "dark"
-);
-
-}
-
-(function(){
-
-const theme=localStorage.getItem("theme");
-
-if(theme==="light"){
-document.body.classList.add("light");
-}
-
-})();
-
-/* =========================
-   LOGIN
-========================= */
 
 async function login(){
 
@@ -287,25 +188,17 @@ loginBox.classList.add("hidden");
 mainBox.classList.remove("hidden");
 
 await loadListas();
-
-loadAvisos();
-
-/* PRODUCCION NO VE OT */
+await loadAvisos();
 
 if(USER.rol!=="Produccion"){
-btnGenerarOT.classList.remove("hidden");
+btnOT.classList.remove("hidden");
 }
 
 }
-
-/* =========================
-   LISTAS
-========================= */
 
 async function loadListas(){
 
 const r=await fetch(API+"?action=getListas");
-
 const d=await r.json();
 
 LISTAS=d.listas||{};
@@ -316,9 +209,9 @@ fill(proyecto,"PROYECTO");
 
 }
 
-function fill(select,key){
+function fill(sel,key){
 
-select.innerHTML="";
+sel.innerHTML="";
 
 (LISTAS[key]||[]).forEach(v=>{
 
@@ -327,22 +220,17 @@ let o=document.createElement("option");
 o.value=v;
 o.textContent=v;
 
-select.appendChild(o);
+sel.appendChild(o);
 
 });
 
 }
-
-/* =========================
-   CREAR AVISO
-========================= */
 
 async function crearAviso(){
 
 if(!descripcion.value.trim()){
 
 alert("La descripción es obligatoria");
-
 return;
 
 }
@@ -364,8 +252,6 @@ descripcion:descripcion.value
 })
 });
 
-/* MENSAJE */
-
 msgAviso.innerHTML="✔ Aviso creado";
 
 setTimeout(()=>{
@@ -378,27 +264,16 @@ loadAvisos();
 
 }
 
-/* =========================
-   AVISOS
-========================= */
-
 async function loadAvisos(){
 
 const r=await fetch(API+"?action=getAvisos");
-
 const d=await r.json();
 
 listaAvisos.innerHTML="";
 
-/* SOLO PENDIENTES + DESC */
-
 const avisos=(d.avisos||[])
-
 .filter(a=>a.estado==="Pendiente")
-
-.sort((a,b)=>
-new Date(b.fecha)-new Date(a.fecha)
-);
+.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
 
 avisos.forEach(a=>{
 
@@ -418,8 +293,6 @@ div.innerHTML=`
 <b>Fecha:</b> ${new Date(a.fecha).toLocaleString()}<br>
 
 `;
-
-/* PRODUCCION NO VE OT */
 
 if(USER.rol!=="Produccion"){
 
@@ -453,9 +326,27 @@ listaAvisos.appendChild(div);
 
 }
 
-/* =========================
-   RECHAZAR
-========================= */
+/* =====================================
+   FIX CONVERTIR OT
+===================================== */
+
+async function convertirOT(id){
+
+await fetch(API,{
+method:"POST",
+body:JSON.stringify({
+action:"convertirAvisoOT",
+avisoID:id
+})
+});
+
+/* QUITAR DEL LISTADO */
+document.getElementById(id)?.remove();
+
+/* ABRIR OT */
+location.href="ot.html?aviso="+id;
+
+}
 
 async function rechazarAviso(id){
 
@@ -472,26 +363,15 @@ document.getElementById(id)?.remove();
 
 }
 
-/* =========================
-   OT
-========================= */
+function crearOTDirecta(){
 
-function crearOT(){
 location.href="ot.html";
-}
 
-function convertirOT(id){
-location.href="ot.html?aviso="+id;
 }
-
-/* =========================
-   LOGOUT
-========================= */
 
 function logout(){
 
 localStorage.clear();
-
 location.reload();
 
 }
