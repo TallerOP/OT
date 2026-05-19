@@ -1,96 +1,182 @@
+# index.html
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestión Avisos</title>
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <style>
-
-*{box-sizing:border-box;}
+*{
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
 
 body{
 margin:0;
-font-family:Arial,sans-serif;
-background:url('op.png') center/cover fixed;
+padding:0;
+background:#111;
+color:#fff;
+min-height:100vh;
+position:relative;
 }
 
-.overlay{
-background:rgba(0,0,0,.55);
-min-height:100vh;
-padding:10px;
+body.light{
+background:#f5f5f5;
+color:#111;
+}
+
+body::before{
+content:"";
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:url('op.png') center center/cover no-repeat;
+opacity:0.5;
+z-index:-1;
+}
+
+.container{
+width:100%;
+max-width:1000px;
+margin:auto;
+padding:15px;
 }
 
 .card{
-background:rgba(0,0,0,.82);
-padding:14px;
-border-radius:12px;
-margin-bottom:12px;
-color:#fff;
+background:rgba(0,0,0,0.7);
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+}
+
+body.light .card{
+background:rgba(255,255,255,0.9);
 }
 
 label{
 display:block;
 margin-top:10px;
+margin-bottom:5px;
 font-weight:bold;
 }
 
 input,select,textarea,button{
 width:100%;
-max-width:100%;
 padding:12px;
-margin-top:6px;
-border:none;
 border-radius:8px;
+border:none;
+margin-bottom:10px;
 font-size:16px;
+}
+
+textarea{
+min-height:120px;
+resize:vertical;
 }
 
 .row{
 display:flex;
-gap:8px;
+gap:10px;
 flex-wrap:wrap;
-margin-top:10px;
 }
 
-.row>*{
+.row button{
 flex:1;
-min-width:120px;
+min-width:0;
 }
 
-textarea{
-min-height:90px;
-resize:vertical;
+.btn-aviso{
+background:#ffd600;
+color:#000;
+font-weight:bold;
+width:49.95%;
 }
 
-.hidden{
+.btn-ot{
+background:#1976d2;
+color:#fff;
+font-weight:bold;
+width:49.95%;
+}
+
+.btn-danger{
+background:#d32f2f;
+color:#fff;
+font-weight:bold;
+}
+
+.btn-secondary{
+background:#666;
+color:#fff;
+}
+
+.notice{
+background:#2e7d32;
+padding:10px;
+border-radius:8px;
+margin-bottom:10px;
 display:none;
 }
 
-.btn-orange{
-background:#f57c00;
+.aviso{
+padding:10px;
+border:1px solid #555;
+border-radius:8px;
+margin-bottom:10px;
 }
 
+@media(max-width:768px){
+
+.btn-aviso,
+.btn-ot{
+width:49%;
+font-size:14px;
+padding:10px;
+}
+
+.row{
+flex-direction:row;
+}
+
+}
 </style>
 </head>
-
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "2af76c42-fa54-4dec-914f-a3e5409de98f",
-    });
-  });
-</script>
-
 <body>
 
-<div class="overlay">
+<div class="container">
+
+<div class="card" id="loginCard">
+<h2>Login</h2>
+
+<label>Usuario</label>
+<input type="text" id="loginUser">
+
+<label>Password</label>
+<input type="password" id="loginPass">
+
+<button onclick="login()">Entrar</button>
+</div>
+
+<div id="app" style="display:none;">
 
 <div class="card">
+<div class="row">
+<button class="btn-secondary" onclick="toggleMode()">Modo oscuro/claro</button>
+<button class="btn-danger" onclick="logout()">Cerrar sesión</button>
+</div>
+</div>
 
-<label>Emisor OT</label>
-<select id="emisorOT"></select>
+<div class="card">
+<h2>Generar aviso / OT</h2>
+
+<div class="notice" id="notice">Aviso creado</div>
 
 <label>Máquina</label>
 <select id="maquina"></select>
@@ -99,248 +185,652 @@ background:#f57c00;
 <select id="proyecto"></select>
 
 <label>Tipo avería</label>
-<select id="codigoAveria"></select>
+<select id="averia"></select>
 
-<label>Hora</label>
-<input id="hora" type="time">
+<label>Descripción</label>
+<textarea id="descripcion"></textarea>
 
-<label>Tiempo intervención</label>
-<input id="tiempoInt" type="number">
-
+<div class="row">
+<button class="btn-aviso" onclick="crearAviso()">Crear aviso</button>
+<button class="btn-ot" id="btnOT" onclick="crearOTDirecta()">Generar OT</button>
+</div>
 </div>
 
 <div class="card">
-
-<h3>Operarios</h3>
-
-<div id="ops"></div>
-
-<button onclick="addOp()">
-Añadir operario
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>Materiales</h3>
-
-<div id="mats"></div>
-
-<button onclick="addMat()">
-Añadir material
-</button>
-
-</div>
-
-<div class="card">
-
-<label>Descripción crear *</label>
-<textarea id="descCrear"></textarea>
-
-<label>Descripción cerrar</label>
-<textarea id="descCerrar"></textarea>
-
-<label>Planificar acción</label>
-<select id="planificar" onchange="togglePlan()">
-<option value="NO">NO</option>
-<option value="SI">SI</option>
-</select>
-
-<div id="planBox" class="hidden">
-
-<label>Descripción planificación</label>
-<textarea id="planAccion"></textarea>
-
+<h2>Avisos pendientes</h2>
+<div id="avisos"></div>
 </div>
 
 </div>
-
-<div class="card">
-
-<button class="btn-orange" onclick="guardarOT()">
-Guardar OT
-</button>
-
-</div>
-
 </div>
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbx07INXaFy_X_UHZ8uLyFjj6eeEGHXyqWtvCz8mZUoS63JphpcJCMAKQZ4yGySd7sZf/exec";
+const API='https://script.google.com/macros/s/AKfycbyfEW_GI0BM2ojeY4WSWkq7x_F3Gk2F6WW36z5lFgPoDcpezQUSnfxbtV78Ua89M_KY/exec';
 
-let LISTAS={};
+window.OneSignal = window.OneSignal || [];
 
-async function init(){
+OneSignal.push(function() {
 
-const r=await fetch(API+"?action=getListas");
+OneSignal.init({
+appId: '2af76c42-fa54-4dec-914f-a3e5409de98f',
+notifyButton: {
+enable: true
+},
+allowLocalhostAsSecureOrigin: true
+});
+
+});
+
+let currentUser=null;
+let currentRole='';
+
+async function login(){
+
+const u=document.getElementById('loginUser').value;
+const p=document.getElementById('loginPass').value;
+
+const r=await fetch(`${API}?action=login&usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
 const d=await r.json();
 
-LISTAS=d.listas||{};
+if(!d.ok){
+alert('Login incorrecto');
+return;
+}
 
-fill(emisorOT,"EMISOR OT");
-fill(maquina,"MAQUINA");
-fill(proyecto,"PROYECTO");
-fill(codigoAveria,"AVERIA");
+currentUser=d;
+currentRole=d.rol;
 
-addOp();
-addMat();
+localStorage.setItem('user',JSON.stringify(d));
 
-await loadAviso();
+document.getElementById('loginCard').style.display='none';
+document.getElementById('app').style.display='block';
+
+if(currentRole==='Produccion'){
+document.getElementById('btnOT').style.display='none';
+}
+
+await cargarListas();
+await cargarAvisos();
 
 }
 
-function fill(sel,key){
+function logout(){
+localStorage.removeItem('user');
+location.reload();
+}
 
-sel.innerHTML="";
+function toggleMode(){
+document.body.classList.toggle('light');
+}
 
-(LISTAS[key]||[]).forEach(v=>{
+async function cargarListas(){
 
-let o=document.createElement("option");
+const r=await fetch(`${API}?action=getListas`);
+const d=await r.json();
 
+fillSelect('maquina',d.listas.MAQUINA || []);
+fillSelect('proyecto',d.listas.PROYECTO || []);
+fillSelect('averia',d.listas.AVERIA || []);
+
+}
+
+function fillSelect(id,data){
+
+const s=document.getElementById(id);
+s.innerHTML='';
+
+(data || []).forEach(v=>{
+const o=document.createElement('option');
 o.value=v;
 o.textContent=v;
+s.appendChild(o);
+});
 
-sel.appendChild(o);
+}
+
+async function crearAviso(){
+
+const descripcion=document.getElementById('descripcion').value.trim();
+
+if(!descripcion){
+alert('La descripción es obligatoria');
+return;
+}
+
+const body={
+action:'crearAviso',
+usuario:currentUser.usuario,
+MAQUINA:document.getElementById('maquina').value,
+PROYECTO:document.getElementById('proyecto').value,
+TIPO_AVERIA:document.getElementById('averia').value,
+descripcion:descripcion
+};
+
+const r=await fetch(API,{
+method:'POST',
+body:JSON.stringify(body)
+});
+
+const d=await r.json();
+
+if(d.ok){
+
+const n=document.getElementById('notice');
+n.style.display='block';
+
+setTimeout(()=>{
+n.style.display='none';
+},3000);
+
+await cargarAvisos();
+
+}else{
+alert(d.error);
+}
+
+}
+
+function crearOTDirecta(){
+
+const descripcion=document.getElementById('descripcion').value.trim();
+
+if(!descripcion){
+alert('La descripción es obligatoria');
+return;
+}
+
+const data={
+MAQUINA:document.getElementById('maquina').value,
+PROYECTO:document.getElementById('proyecto').value,
+TIPO_AVERIA:document.getElementById('averia').value,
+DESCRIPCION:descripcion
+};
+
+localStorage.setItem('otData',JSON.stringify(data));
+window.location='ot.html';
+
+}
+
+async function cargarAvisos(){
+
+const r=await fetch(`${API}?action=getAvisos`);
+const d=await r.json();
+
+const cont=document.getElementById('avisos');
+cont.innerHTML='';
+
+(d.avisos || [])
+.filter(a=>a.estado==='Pendiente')
+.forEach(a=>{
+
+const div=document.createElement('div');
+div.className='aviso';
+
+let botones='';
+
+if(currentRole!=='Produccion'){
+
+botones=`
+<button class="btn-ot" onclick='convertirAviso(${JSON.stringify(a)})'>Convertir a OT</button>
+`;
+
+}
+
+botones+=`
+<button class="btn-danger" onclick="rechazarAviso('${a.avisoID}')">Eliminar aviso</button>
+`;
+
+div.innerHTML=`
+<b>Fecha:</b> ${a.fecha}<br>
+<b>Usuario:</b> ${a.usuario}<br>
+<b>Máquina:</b> ${a.maquina}<br>
+<b>Proyecto:</b> ${a.proyecto}<br>
+<b>Avería:</b> ${a.tipoAveria}<br>
+<b>Descripción:</b> ${a.descripcion}<br><br>
+${botones}
+`;
+
+cont.appendChild(div);
 
 });
 
 }
 
-async function loadAviso(){
+async function rechazarAviso(id){
 
-const id=new URLSearchParams(location.search).get("aviso");
+await fetch(API,{
+method:'POST',
+body:JSON.stringify({
+action:'rechazarAviso',
+avisoID:id,
+usuario:currentUser.usuario
+})
+});
 
-if(!id) return;
+await cargarAvisos();
 
-const r=await fetch(API+"?action=getAvisos");
+}
+
+async function convertirAviso(a){
+
+await fetch(API,{
+method:'POST',
+body:JSON.stringify({
+action:'convertirAvisoOT',
+avisoID:a.avisoID,
+MAQUINA:a.maquina
+})
+});
+
+localStorage.setItem('otData',JSON.stringify({
+MAQUINA:a.maquina,
+PROYECTO:a.proyecto,
+TIPO_AVERIA:a.tipoAveria,
+DESCRIPCION:a.descripcion
+}));
+
+window.location='ot.html';
+
+}
+
+window.onload=async()=>{
+
+const u=localStorage.getItem('user');
+
+if(u){
+
+currentUser=JSON.parse(u);
+currentRole=currentUser.rol;
+
+document.getElementById('loginCard').style.display='none';
+document.getElementById('app').style.display='block';
+
+if(currentRole==='Produccion'){
+document.getElementById('btnOT').style.display='none';
+}
+
+await cargarListas();
+await cargarAvisos();
+
+}
+
+};
+
+</script>
+</body>
+</html>
+```
+
+---
+
+# ot.html
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OT</title>
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+<style>
+*{
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+margin:0;
+padding:0;
+background:#111;
+color:#fff;
+}
+
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background:url('op.png') center center/cover no-repeat;
+opacity:0.5;
+z-index:-1;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+padding:15px;
+}
+
+.card{
+background:rgba(0,0,0,0.7);
+padding:15px;
+border-radius:10px;
+margin-bottom:15px;
+}
+
+label{
+display:block;
+margin-top:10px;
+margin-bottom:5px;
+font-weight:bold;
+}
+
+input,select,textarea,button{
+width:100%;
+padding:12px;
+font-size:16px;
+border:none;
+border-radius:8px;
+margin-bottom:10px;
+}
+
+textarea{
+min-height:120px;
+resize:vertical;
+}
+
+.row{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.row > *{
+flex:1;
+min-width:0;
+}
+
+.btn{
+background:#1976d2;
+color:#fff;
+font-weight:bold;
+}
+
+.btn-danger{
+background:#d32f2f;
+color:#fff;
+font-weight:bold;
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="card">
+<div class="row">
+<button class="btn-danger" onclick="logout()">Cerrar sesión</button>
+</div>
+</div>
+
+<div class="card">
+<h2>Orden de trabajo</h2>
+
+<label>Máquina</label>
+<select id="maquina"></select>
+
+<label>Proyecto</label>
+<select id="proyecto"></select>
+
+<label>Código avería</label>
+<select id="codigo"></select>
+
+<label>Emisor OT</label>
+<select id="emisor"></select>
+
+<label>Descripción cerrar</label>
+<textarea id="descripcionCerrar"></textarea>
+
+<label>Tiempo intervención</label>
+<input type="number" id="tiempoIntervencion">
+
+<div id="operarios"></div>
+<button class="btn" onclick="addOperario()">Añadir operario</button>
+
+<div id="materiales"></div>
+<button class="btn" onclick="addMaterial()">Añadir material</button>
+
+<button class="btn" onclick="window.open('https://tallerop.github.io/gestionrecambios/')">Escanear material</button>
+
+<label>Planificar acción</label>
+<select id="planificar" onchange="togglePlanif()">
+<option value="NO">NO</option>
+<option value="SI">SI</option>
+</select>
+
+<div id="planifBox" style="display:none;">
+<label>Descripción planificación</label>
+<textarea id="descripcionPlanif"></textarea>
+</div>
+
+<button class="btn" onclick="guardarOT()">Guardar OT</button>
+
+</div>
+</div>
+
+<script>
+
+const API='https://script.google.com/macros/s/AKfycbyfEW_GI0BM2ojeY4WSWkq7x_F3Gk2F6WW36z5lFgPoDcpezQUSnfxbtV78Ua89M_KY/exec';
+
+window.OneSignal = window.OneSignal || [];
+
+OneSignal.push(function() {
+
+OneSignal.init({
+appId: '2af76c42-fa54-4dec-914f-a3e5409de98f',
+notifyButton: {
+enable: true
+},
+allowLocalhostAsSecureOrigin: true
+});
+
+});
+
+let operarios=0;
+let materiales=0;
+let currentUser=null;
+let emisorDefault='';
+
+function logout(){
+localStorage.removeItem('user');
+window.location='index.html';
+}
+
+async function cargarDatos(){
+
+const r1=await fetch(`${API}?action=getListas`);
+const listas=await r1.json();
+
+const r2=await fetch(`${API}?action=getUsuarios`);
+const usuarios=await r2.json();
+
+fill('maquina',listas.listas.MAQUINA || []);
+fill('proyecto',listas.listas.PROYECTO || []);
+fill('codigo',listas.listas.AVERIA || []);
+
+const emisores=(usuarios.usuarios || []).map(u=>u.emisor).filter(v=>v);
+fill('emisor',emisores);
+
+const u=JSON.parse(localStorage.getItem('user') || '{}');
+currentUser=u;
+
+const match=(usuarios.usuarios || []).find(x=>x.usuario===u.usuario);
+
+if(match){
+emisorDefault=match.emisor;
+document.getElementById('emisor').value=match.emisor;
+}
+
+const otData=JSON.parse(localStorage.getItem('otData') || '{}');
+
+if(otData.MAQUINA){
+document.getElementById('maquina').value=otData.MAQUINA;
+}
+
+if(otData.PROYECTO){
+document.getElementById('proyecto').value=otData.PROYECTO;
+}
+
+if(otData.TIPO_AVERIA){
+document.getElementById('codigo').value=otData.TIPO_AVERIA;
+}
+
+addOperario();
+addMaterial();
+
+}
+
+function fill(id,data){
+
+const s=document.getElementById(id);
+s.innerHTML='';
+
+(data || []).forEach(v=>{
+const o=document.createElement('option');
+o.value=v;
+o.textContent=v;
+s.appendChild(o);
+});
+
+}
+
+async function addOperario(){
+
+if(operarios>=6)return;
+
+operarios++;
+
+const r=await fetch(`${API}?action=getUsuarios`);
 const d=await r.json();
 
-const a=(d.avisos||[]).find(x=>x.avisoID===id);
+const emisores=(d.usuarios || []).map(u=>u.emisor).filter(v=>v);
 
-if(!a) return;
+const div=document.createElement('div');
+div.className='row';
 
-maquina.value=a.maquina||"";
-proyecto.value=a.proyecto||"";
-codigoAveria.value=a.tipoAveria||"";
-descCrear.value=a.descripcion||"";
+let options='';
 
-}
-
-function addOp(){
-
-if(ops.children.length>=6){
-alert("Máximo 6");
-return;
-}
-
-let div=document.createElement("div");
-
-div.className="row";
+emisores.forEach(e=>{
+options+=`<option value="${e}">${e}</option>`;
+});
 
 div.innerHTML=`
-<select class="opSel"></select>
-<input class="opTime" type="number" placeholder="Tiempo">
+<div>
+<label>Operario ${operarios}</label>
+<select id="operario${operarios}">${options}</select>
+</div>
+<div>
+<label>Tiempo ${operarios}</label>
+<input type="number" id="tiempo${operarios}">
+</div>
 `;
 
-ops.appendChild(div);
+const cont=document.getElementById('operarios');
+cont.appendChild(div);
 
-fill(div.querySelector(".opSel"),"EMISOR OT");
+if(operarios===1 && emisorDefault){
+document.getElementById('operario1').value=emisorDefault;
+}
 
 }
 
-function addMat(){
+function addMaterial(){
 
-if(mats.children.length>=4){
-alert("Máximo 4");
-return;
-}
+if(materiales>=4)return;
 
-let div=document.createElement("div");
+materiales++;
 
-div.className="row";
+const div=document.createElement('div');
+div.className='row';
 
 div.innerHTML=`
-<input class="matName" placeholder="Material">
-<input class="matQty" type="number" placeholder="Cantidad">
+<div>
+<label>Material ${materiales}</label>
+<input type="text" id="material${materiales}">
+</div>
+<div>
+<label>Cantidad ${materiales}</label>
+<input type="number" id="cantidad${materiales}">
+</div>
 `;
 
-mats.appendChild(div);
+document.getElementById('materiales').appendChild(div);
 
 }
 
-function togglePlan(){
+function togglePlanif(){
 
-planBox.classList.toggle(
-"hidden",
-planificar.value!=="SI"
-);
+const v=document.getElementById('planificar').value;
+
+document.getElementById('planifBox').style.display=
+v==='SI' ? 'block' : 'none';
 
 }
 
 async function guardarOT(){
 
-const OPERARIOS=[...ops.querySelectorAll(".row")]
-.map(r=>({
+const operariosData=[];
+const materialesData=[];
 
-NOMBRE:r.querySelector(".opSel").value,
-TIEMPO:r.querySelector(".opTime").value
+for(let i=1;i<=operarios;i++){
 
-}));
-
-const MATERIALES=[...mats.querySelectorAll(".row")]
-.map(r=>({
-
-MATERIAL:r.querySelector(".matName").value,
-CANTIDAD:r.querySelector(".matQty").value
-
-}));
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-
-action:"crearOT",
-
-EMISOR_OT:emisorOT.value,
-
-MAQUINA:maquina.value,
-PROYECTO:proyecto.value,
-
-CODIGO_AVERIA:codigoAveria.value,
-
-HORA:hora.value,
-TIEMPO_INTERVENCION:tiempoInt.value,
-
-DESCRIPCION_CREACION:descCrear.value,
-
-/* FIX */
-DESCRIPCION_CIERRE:descCerrar.value,
-
-/* FIX */
-DESCRIPCION_PLANIFICACION:
-planificar.value==="SI"
-? planAccion.value
-: "",
-
-PLANIFICAR:"SI",
-
-OPERARIOS,
-MATERIALES
-
-})
+operariosData.push({
+NOMBRE:document.getElementById(`operario${i}`).value,
+TIEMPO:document.getElementById(`tiempo${i}`).value
 });
-
-alert("OT guardada");
-
-location.href="index.html";
 
 }
 
-init();
+for(let i=1;i<=materiales;i++){
+
+materialesData.push({
+MATERIAL:document.getElementById(`material${i}`).value,
+CANTIDAD:document.getElementById(`cantidad${i}`).value
+});
+
+}
+
+const otData=JSON.parse(localStorage.getItem('otData') || '{}');
+
+const body={
+action:'crearOT',
+EMISOR_OT:document.getElementById('emisor').value,
+MAQUINA:document.getElementById('maquina').value,
+PROYECTO:document.getElementById('proyecto').value,
+CODIGO_AVERIA:document.getElementById('codigo').value,
+TIEMPO_INTERVENCION:document.getElementById('tiempoIntervencion').value,
+DESCRIPCION_CREACION:otData.DESCRIPCION || '',
+DESCRIPCION_CIERRE:document.getElementById('descripcionCerrar').value,
+PLANIFICAR:document.getElementById('planificar').value,
+DESCRIPCION_PLANIFICACION:document.getElementById('descripcionPlanif').value,
+OPERARIOS:operariosData,
+MATERIALES:materialesData
+};
+
+const r=await fetch(API,{
+method:'POST',
+body:JSON.stringify(body)
+});
+
+const d=await r.json();
+
+if(d.ok){
+alert('OT guardada');
+localStorage.removeItem('otData');
+window.location='index.html';
+}else{
+alert(d.error);
+}
+
+}
+
+window.onload=cargarDatos;
 
 </script>
-
 </body>
 </html>
+```
