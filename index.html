@@ -84,6 +84,16 @@ margin-top:10px;
 </style>
 </head>
 
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "2af76c42-fa54-4dec-914f-a3e5409de98f",
+    });
+  });
+</script>
+
 <body>
 
 <div class="overlay">
