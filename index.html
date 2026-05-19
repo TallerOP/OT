@@ -1,392 +1,79 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gestión Avisos</title>
-
-<style>
-
-*{box-sizing:border-box;}
-
-body{
-margin:0;
-font-family:Arial,sans-serif;
-background:url('op.png') center/cover fixed;
-}
-
-.overlay{
-background:rgba(0,0,0,.55);
-min-height:100vh;
-padding:10px;
-}
-
-.card{
-background:rgba(0,0,0,.82);
-padding:14px;
-border-radius:12px;
-margin-bottom:12px;
-color:#fff;
-}
-
-label{
-display:block;
-margin-top:10px;
-font-weight:bold;
-}
-
-input,select,textarea,button{
-width:100%;
-max-width:100%;
-padding:12px;
-margin-top:6px;
-border:none;
-border-radius:8px;
-font-size:16px;
-}
-
-textarea{
-min-height:90px;
-resize:vertical;
-}
-
-.rowBtns{
-display:flex;
-gap:8px;
-}
-
-.rowBtns button{
-width:49.95%;
-}
-
-.btn-yellow{background:#fbc02d;}
-.btn-blue{background:#1976d2;color:#fff;}
-.btn-orange{background:#f57c00;}
-.btn-red{background:#d32f2f;color:#fff;}
-
-.aviso{
-background:#222;
-padding:12px;
-margin-top:10px;
-border-radius:10px;
-}
-
-.hidden{
-display:none;
-}
-
-#msgAviso{
-color:#00ff90;
-font-weight:bold;
-margin-top:10px;
-}
-
-</style>
-</head>
-
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "2af76c42-fa54-4dec-914f-a3e5409de98f",
-    });
-  });
-</script>
-
-<body>
-
-<div class="overlay">
-
-<div id="loginBox" class="card">
-
-<h2>Login</h2>
-
-<label>Usuario</label>
-<input id="usuario">
-
-<label>Contraseña</label>
-<input id="password" type="password">
-
-<button onclick="login()">Entrar</button>
-
-</div>
-
-<div id="mainBox" class="hidden">
-
-<div class="card">
-
-<button class="btn-red" onclick="logout()">
-Cerrar sesión
-</button>
-
-</div>
-
-<div class="card">
-
-<h3>Nuevo aviso</h3>
-
-<label>Máquina</label>
-<select id="maquina"></select>
-
-<label>Tipo avería</label>
-<select id="tipoAveria"></select>
-
-<label>Proyecto</label>
-<select id="proyecto"></select>
-
-<label>Descripción *</label>
-<textarea id="descripcion"></textarea>
-
-<div class="rowBtns">
-
-<button class="btn-yellow" onclick="crearAviso()">
-Crear aviso
-</button>
-
-<button id="btnOT"
-class="btn-blue hidden"
-onclick="crearOTDirecta()">
-
-Generar OT
-
-</button>
-
-</div>
-
-<div id="msgAviso"></div>
-
-</div>
-
-<div class="card">
-
-<h3>Avisos pendientes</h3>
-
-<div id="listaAvisos"></div>
-
-</div>
-
-</div>
-
-</div>
-
-<script>
-
-const API="https://script.google.com/macros/s/AKfycbx07INXaFy_X_UHZ8uLyFjj6eeEGHXyqWtvCz8mZUoS63JphpcJCMAKQZ4yGySd7sZf/exec";
-
-let USER=null;
-let LISTAS={};
-
-async function login(){
-
-const r=await fetch(
-API+"?action=login&usuario="+encodeURIComponent(usuario.value)+"&password="+encodeURIComponent(password.value)
-);
-
-const d=await r.json();
-
-if(!d.ok){
-alert(d.error);
-return;
-}
-
-USER=d;
-
-localStorage.setItem("u",JSON.stringify(USER));
-
-loginBox.classList.add("hidden");
-mainBox.classList.remove("hidden");
-
-await loadListas();
-await loadAvisos();
-
-if(USER.rol!=="Produccion"){
-btnOT.classList.remove("hidden");
-}
-
-}
-
-async function loadListas(){
-
-const r=await fetch(API+"?action=getListas");
-const d=await r.json();
-
-LISTAS=d.listas||{};
-
-fill(maquina,"MAQUINA");
-fill(tipoAveria,"AVERIA");
-fill(proyecto,"PROYECTO");
-
-}
-
-function fill(sel,key){
-
-sel.innerHTML="";
-
-(LISTAS[key]||[]).forEach(v=>{
-
-let o=document.createElement("option");
-
-o.value=v;
-o.textContent=v;
-
-sel.appendChild(o);
-
-});
-
-}
-
-async function crearAviso(){
-
-if(!descripcion.value.trim()){
-
-alert("La descripción es obligatoria");
-return;
-
-}
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-
-action:"crearAviso",
-
-usuario:USER.usuario,
-
-MAQUINA:maquina.value,
-TIPO_AVERIA:tipoAveria.value,
-PROYECTO:proyecto.value,
-
-descripcion:descripcion.value
-
-})
-});
-
-msgAviso.innerHTML="✔ Aviso creado";
-
-setTimeout(()=>{
-msgAviso.innerHTML="";
-},3000);
-
-descripcion.value="";
-
-loadAvisos();
-
-}
-
-async function loadAvisos(){
-
-const r=await fetch(API+"?action=getAvisos");
-const d=await r.json();
-
-listaAvisos.innerHTML="";
-
-const avisos=(d.avisos||[])
-.filter(a=>a.estado==="Pendiente")
-.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
-
-avisos.forEach(a=>{
-
-let div=document.createElement("div");
-
-div.className="aviso";
-div.id=a.avisoID;
-
-div.innerHTML=`
-
+<b>Fecha:</b> ${a.fecha}<br>
+<b>Usuario:</b> ${a.usuario}<br>
 <b>Máquina:</b> ${a.maquina}<br>
 <b>Proyecto:</b> ${a.proyecto}<br>
 <b>Avería:</b> ${a.tipoAveria}<br>
 <b>Descripción:</b> ${a.descripcion}<br><br>
-
-<b>Usuario:</b> ${a.usuario}<br>
-<b>Fecha:</b> ${new Date(a.fecha).toLocaleString()}<br>
-
+${botones}
 `;
 
-if(USER.rol!=="Produccion"){
-
-div.innerHTML+=`
-
-<div class="rowBtns">
-
-<button class="btn-orange"
-onclick="convertirOT('${a.avisoID}')">
-
-Convertir a OT
-
-</button>
-
-<button class="btn-red"
-onclick="rechazarAviso('${a.avisoID}')">
-
-Eliminar aviso
-
-</button>
-
-</div>
-
-`;
-
-}
-
-listaAvisos.appendChild(div);
+cont.appendChild(div);
 
 });
-
-}
-
-/* =====================================
-   FIX CONVERTIR OT
-===================================== */
-
-async function convertirOT(id){
-
-await fetch(API,{
-method:"POST",
-body:JSON.stringify({
-action:"convertirAvisoOT",
-avisoID:id
-})
-});
-
-/* QUITAR DEL LISTADO */
-document.getElementById(id)?.remove();
-
-/* ABRIR OT */
-location.href="ot.html?aviso="+id;
 
 }
 
 async function rechazarAviso(id){
 
 await fetch(API,{
-method:"POST",
+method:'POST',
 body:JSON.stringify({
-action:"rechazarAviso",
+action:'rechazarAviso',
 avisoID:id,
-usuario:USER.usuario
+usuario:currentUser.usuario
 })
 });
 
-document.getElementById(id)?.remove();
+await cargarAvisos();
 
 }
 
-function crearOTDirecta(){
+async function convertirAviso(a){
 
-location.href="ot.html";
+await fetch(API,{
+method:'POST',
+body:JSON.stringify({
+action:'convertirAvisoOT',
+avisoID:a.avisoID,
+MAQUINA:a.maquina
+})
+});
+
+localStorage.setItem('otData',JSON.stringify({
+MAQUINA:a.maquina,
+PROYECTO:a.proyecto,
+TIPO_AVERIA:a.tipoAveria,
+DESCRIPCION:a.descripcion
+}));
+
+window.location='ot.html';
 
 }
 
-function logout(){
+window.onload=async()=>{
 
-localStorage.clear();
-location.reload();
+const u=localStorage.getItem('user');
+
+if(u){
+
+currentUser=JSON.parse(u);
+currentRole=currentUser.rol;
+
+document.getElementById('loginCard').style.display='none';
+document.getElementById('app').style.display='block';
+
+if(currentRole==='Produccion'){
+document.getElementById('btnOT').style.display='none';
+}
+
+await cargarListas();
+await cargarAvisos();
 
 }
+
+};
 
 </script>
-
 </body>
 </html>
