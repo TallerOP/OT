@@ -160,92 +160,14 @@ Generar OT
 
 </div>
 
-<script src="capacitor.js"></script>
-
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbxLT_8CSna1sJBFZd2C1hiSTOWCOp0GBO1uAnJLmnknBNCQrLC4DhAqRX46uOvcuLZt/exec";
+const API="https://script.google.com/macros/s/AKfycbzFkdH_mgy7sfr9wNdXxvanJs26tsfUA8GbsEFyHXOqZVOG2b8ReFsBK0CZyiU4O2OH/exec";
 
 let USER=null;
 let LISTAS={};
 
-/* =====================================================
-   PUSH
-===================================================== */
-
-async function initPush(){
-
-try{
-
-if(!window.Capacitor){
-console.log("Capacitor no disponible");
-return;
-}
-
-const { PushNotifications } = Capacitor.Plugins;
-
-const perm = await PushNotifications.requestPermissions();
-
-if(perm.receive !== "granted"){
-
-console.log("Permiso denegado");
-return;
-
-}
-
-await PushNotifications.register();
-
-PushNotifications.addListener(
-'registration',
-token => {
-
-console.log("TOKEN PUSH:", token.value);
-
-}
-);
-
-PushNotifications.addListener(
-'registrationError',
-err => {
-
-console.error("Error push:", err);
-
-}
-);
-
-PushNotifications.addListener(
-'pushNotificationReceived',
-notification => {
-
-console.log("Push recibida:", notification);
-
-}
-);
-
-PushNotifications.addListener(
-'pushNotificationActionPerformed',
-notification => {
-
-console.log("Push pulsada:", notification);
-
-}
-);
-
-}catch(err){
-
-console.error(err);
-
-}
-
-}
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
 async function login(){
-
-try{
 
 const r=await fetch(
 API+"?action=login&usuario="+encodeURIComponent(usuario.value)+"&password="+encodeURIComponent(password.value)
@@ -268,24 +190,11 @@ mainBox.classList.remove("hidden");
 await loadListas();
 await loadAvisos();
 
-await initPush();
-
 if(USER.rol!=="Produccion"){
 btnOT.classList.remove("hidden");
 }
 
-}catch(err){
-
-console.error(err);
-alert("Error de conexión");
-
 }
-
-}
-
-/* =====================================================
-   LISTAS
-===================================================== */
 
 async function loadListas(){
 
@@ -316,10 +225,6 @@ sel.appendChild(o);
 });
 
 }
-
-/* =====================================================
-   CREAR AVISO
-===================================================== */
 
 async function crearAviso(){
 
@@ -358,10 +263,6 @@ descripcion.value="";
 loadAvisos();
 
 }
-
-/* =====================================================
-   AVISOS
-===================================================== */
 
 async function loadAvisos(){
 
@@ -425,9 +326,9 @@ listaAvisos.appendChild(div);
 
 }
 
-/* =====================================================
-   OT
-===================================================== */
+/* =====================================
+   FIX CONVERTIR OT
+===================================== */
 
 async function convertirOT(id){
 
@@ -439,15 +340,13 @@ avisoID:id
 })
 });
 
+/* QUITAR DEL LISTADO */
 document.getElementById(id)?.remove();
 
+/* ABRIR OT */
 location.href="ot.html?aviso="+id;
 
 }
-
-/* =====================================================
-   RECHAZAR
-===================================================== */
 
 async function rechazarAviso(id){
 
@@ -464,19 +363,11 @@ document.getElementById(id)?.remove();
 
 }
 
-/* =====================================================
-   CREAR OT
-===================================================== */
-
 function crearOTDirecta(){
 
 location.href="ot.html";
 
 }
-
-/* =====================================================
-   LOGOUT
-===================================================== */
 
 function logout(){
 
